@@ -37,6 +37,11 @@
       "excel_name": "test_key_value.xlsx",
       "excel_sub_dir": "test",
       "export_name": "test_key_value"
+    },
+    {
+      "excel_name": "test_un_primary_key2columns.xlsx",
+      "excel_sub_dir": "test",
+      "export_name": "test_un_primary_key2columns"
     }
   ]
 }

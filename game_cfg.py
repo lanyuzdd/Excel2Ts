@@ -16,7 +16,8 @@ cur_sheet_type_col = None
 
 cur_sheet_column_names = None
 
-all_tables = ['VIP等级表.xlsx', '锻造强化.xlsx', 'test_key.xlsx', 'test_key_value.xlsx']
+all_tables = ['VIP等级表.xlsx', '锻造强化.xlsx', '装备通用.xlsx', 'test_key.xlsx', 'test_key_value.xlsx',
+              'test_un_primary_key2columns.xlsx']
 output_tables = ['装备通用.xlsx']
 
 
@@ -142,15 +143,16 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data):
         key_column_idx = sheet_column_type_list.index(key_value_type_data)
         if key_value_type_data['key_prefix'] == 'primary_key':
             sheet_json_data['primary_key'] = True
+            sheet_lua_data['primary_key'] = True
         elif key_value_type_data['key_prefix'] == 'key':
-            uncomment_column_num = value_logic.get_uncomment_value_type_num_of_sheet
+            uncomment_column_num = value_logic.get_uncomment_column_num_of_sheet(sheet_column_type_list)
             if uncomment_column_num == 2:
                 sheet_json_data['un_primary_key2columns'] = True
+                sheet_lua_data['un_primary_key2columns'] = True
 
+    # 二维数组，excel读取的原始行列数据
     row_json_data_list = []
     row_lua_data_list = []
-
-    keys = []
 
     for row_idx in range(4, row_num + 1):
         # 读取一行
@@ -188,9 +190,6 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data):
                 if match:
                     cell_value = str(int(cell_value))
 
-            if key_column_idx != -1 and key_column_idx == column_idx:
-                keys.append(str(cell_value))
-
             row_json_data[column_name] = cell_value
             row_lua_data.append(cell_value)
             pass
@@ -208,8 +207,6 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data):
     print(json.dumps(row_lua_data_list))
 
     # 所有行数据读取完毕，再组织
-    restructure_sheet_json_original_data(row_json_data_list, key_column_idx, column_names)
-    restructure_sheet_lua_original_data(row_lua_data_list, key_column_idx, column_names)
 
     if key_column_idx == -1:
         # 没有键值对
@@ -229,51 +226,82 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data):
             sheet_lua_data['map'][row_lua_data_item[0]] = row_lua_data_item[1]
         pass
     else:
-        sheet_json_data['type'] = 'map'
-        sheet_lua_data['type'] = 'map'
-
-        if sheet_lua_data['primary_key']:
-            pass
-        elif sheet_lua_data['un_primary_key2columns']:
-            pass
-        else:
-            pass
-
-        for row_json_data_item in row_json_data_list:
-            # 表键列名
-            key_column_name = column_names[key_column_idx]
-            print(key_column_name, json.dumps(row_json_data_item))
-            # 拿到行数据中的键值
-            key_name = row_json_data_item[key_column_name]
-            print(key_name)
-            # 删除行数据的键值
-            row_json_data_item.pop(key_column_name)
-            print('row_json_data_item removed key', json.dumps(row_json_data_item))
-            if key_name not in sheet_json_data['map']:
-                sheet_json_data['map'][key_name] = []
-            sheet_json_data['map'][key_name].append(row_json_data_item)
-            pass
-
+        restructure_sheet_json_original_data_with_key(sheet_json_data, row_json_data_list, column_names, key_column_idx)
+        restructure_sheet_lua_original_data_with_key(sheet_lua_data, row_lua_data_list, column_names, key_column_idx)
         pass
-
-        for row_lua_data_item in row_lua_data_list:
-            key_name = row_lua_data_item[key_column_idx]
-            row_lua_data_item.pop(key_column_idx)
-
-            if key_name not in sheet_lua_data['map']:
-                sheet_lua_data['map'][key_name] = []
-
-            sheet_lua_data['map'][key_name].append(row_lua_data_item)
-            pass
     pass
 
 
 # 表所有行数据读取完毕后，按列定义的结构重新组织整表数据结构
-def restructure_sheet_json_original_data(row_json_data_list):
+def restructure_sheet_json_original_data_with_key(sheet_json_data, row_json_data_list, column_names, key_column_idx):
+    sheet_json_data['type'] = 'map'
+
+    for row_json_data_item in row_json_data_list:
+        # 表键列名
+        key_column_name = column_names[key_column_idx]
+        print(key_column_name, json.dumps(row_json_data_item))
+        # 拿到行数据中的键值
+        key_name = row_json_data_item[key_column_name]
+        print(key_name)
+        # 删除行数据的键值
+        row_json_data_item.pop(key_column_name)
+        print('row_json_data_item removed key', json.dumps(row_json_data_item))
+        if sheet_json_data['primary_key']:
+            if key_name in sheet_json_data['map']:
+                raise Exception('primary_key重复!')
+            else:
+                sheet_json_data['map'][key_name] = row_json_data_item
+            pass
+        elif sheet_json_data['un_primary_key2columns']:
+            if len(row_json_data_item) >= 2:
+                raise Exception('un_primary_key2columns判断错误，列数超过3！')
+
+            if key_name not in sheet_json_data['map']:
+                sheet_json_data['map'][key_name] = []
+            for item_key, item_value in row_json_data_item.items():
+                sheet_json_data['map'][key_name].append(item_value)
+
+            pass
+        else:
+            if key_name not in sheet_json_data['map']:
+                sheet_json_data['map'][key_name] = []
+            sheet_json_data['map'][key_name].append(row_json_data_item)
+        pass
     pass
 
 
-def restructure_sheet_lua_original_data(row_lua_data_list):
+def restructure_sheet_lua_original_data_with_key(sheet_lua_data, row_lua_data_list, column_names, key_column_idx):
+    sheet_lua_data['type'] = 'map'
+
+    for row_lua_data_item in row_lua_data_list:
+        key_name = row_lua_data_item[key_column_idx]
+        row_lua_data_item.pop(key_column_idx)
+
+        if sheet_lua_data['primary_key']:
+            if key_name in sheet_lua_data['map']:
+                raise Exception('primary_key重复!')
+            else:
+                sheet_lua_data['map'][key_name] = row_lua_data_item
+            print('restructure_sheet_lua_original_data_with_key primary_key')
+            pass
+        elif sheet_lua_data['un_primary_key2columns']:
+            if len(row_lua_data_item) > 2:
+                raise Exception('un_primary_key2columns判断错误，列数超过2！')
+
+            if key_name not in sheet_lua_data['map']:
+                sheet_lua_data['map'][key_name] = []
+            sheet_lua_data['map'][key_name].append(row_lua_data_item[0])
+            print('restructure_sheet_lua_original_data_with_key un_primary_key2columns')
+
+            pass
+        else:
+            if key_name not in sheet_lua_data['map']:
+                sheet_lua_data['map'][key_name] = []
+
+            sheet_lua_data['map'][key_name].append(row_lua_data_item)
+            print('restructure_sheet_lua_original_data_with_key common')
+
+        pass
     pass
 
 
@@ -343,9 +371,18 @@ def validate_primary_key_column(sheet, column_idx):
 
 # 注释列的数值类型改成comment
 def column_types_change_comment_column_type(column_types, column_names):
+    comment_idxes = []
     for column_name in column_names:
+        print('column_types_change_comment_column_type ', column_name[0:7])
         if column_name[0:7] == 'comment':
-            column_types[column_names.index(column_name)] = 'comment'
+            idx = column_names.index(column_name)
+            # print(idx)
+            comment_idxes.append(idx)
+    for comment_idx in comment_idxes:
+        column_types[comment_idx] = 'comment'
+
+    print(column_types)
+
     pass
 
 
