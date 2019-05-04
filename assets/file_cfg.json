@@ -1,0 +1,42 @@
+{
+  "info": "游戏配置excel转lua",
+  "excel_root_path": "D:\\game_excel\\",
+  "export_path": "D:\\game_excel\\export\\",
+  "tables": [
+    {
+      "excel_name": "VIP等级表.xlsx",
+      "excel_sub_dir": "VIP",
+      "export_name": "vip_level"
+    },
+    {
+      "excel_name": "锻造强化.xlsx",
+      "excel_sub_dir": "锻造",
+      "export_name": "upgrade_equip_slot_qh_cfg"
+    },
+    {
+      "excel_name": "锻造附魔.xlsx",
+      "excel_sub_dir": "锻造",
+      "export_name": "upgrade_equip_slot_yh_cfg"
+    },
+    {
+      "excel_name": "锻造宝石.xlsx",
+      "excel_sub_dir": "锻造",
+      "export_name": "upgrade_equip_slot_stone_cfg"
+    },
+    {
+      "excel_name": "装备通用.xlsx",
+      "excel_sub_dir": "锻造",
+      "export_name": "sys_equip"
+    },
+    {
+      "excel_name": "test_key.xlsx",
+      "excel_sub_dir": "test",
+      "export_name": "test_key"
+    },
+    {
+      "excel_name": "test_key_value.xlsx",
+      "excel_sub_dir": "test",
+      "export_name": "test_key_value"
+    }
+  ]
+}
