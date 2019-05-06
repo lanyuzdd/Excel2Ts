@@ -16,9 +16,9 @@ cur_sheet_type_col = None
 
 cur_sheet_column_names = None
 
-all_tables = ['VIP等级表.xlsx', '锻造强化.xlsx', '装备通用.xlsx', 'test_key.xlsx', 'test_key_value.xlsx',
+all_tables = ['VIP等级表.xlsx', '锻造强化.xlsx', '装备通用.xlsx', '锻造宝石.xlsx', 'test_key.xlsx', 'test_key_value.xlsx',
               'test_un_primary_key2columns.xlsx']
-output_tables = ['装备通用.xlsx']
+output_tables = ['锻造宝石.xlsx']
 
 
 def load_file_cfg():
@@ -210,10 +210,14 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data):
 
     if key_column_idx == -1:
         # 没有键值对
-        sheet_json_data['list'].append(row_json_data)
-        sheet_lua_data['list'].append(row_lua_data)
         sheet_json_data['type'] = 'list'
         sheet_lua_data['type'] = 'list'
+        for row_json_data_item in row_json_data_list:
+            sheet_json_data['list'].append(row_json_data_item)
+
+        for row_lua_data_item in row_lua_data_list:
+            sheet_lua_data['list'].append(row_lua_data_item)
+
     elif key_value_type_data['key_prefix'] == 'key_value_key':
         # 纯键值对
         sheet_json_data['type'] = 'map'

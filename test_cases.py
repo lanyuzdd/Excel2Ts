@@ -237,8 +237,13 @@ def test_dic():
     pass
 
 
+def json_list2lua():
+    json_list = [[0, 1.0], [0.7071067811865476, 0.7071067811865475], [1.0, 0], [0.7071067811865476, -0.7071067811865475], [0, -1.0], [-0.7071067811865475, -0.7071067811865476], [-1.0, 0], [-0.7071067811865477, 0.7071067811865475]]
+    print(json2lua.dic_to_lua_str(json_list))
+
+
 # test_json_indent()
 # test_lua_indent()
 # test_json_to_lua()
-
-test_dic()
+# test_dic()
+json_list2lua()
