@@ -29,6 +29,31 @@
       "export_name": "sys_equip"
     },
     {
+      "excel_name": "材料副本地图.xlsx",
+      "excel_sub_dir": "副本",
+      "export_name": "material_instancing_map_cfg"
+    },
+    {
+      "excel_name": "材料副本.xlsx",
+      "excel_sub_dir": "副本",
+      "export_name": "material_instancing"
+    },
+    {
+      "excel_name": "通天塔.xlsx",
+      "excel_sub_dir": "副本",
+      "export_name": "sky_high_tower_cfg"
+    },
+    {
+      "excel_name": "首充.xlsx",
+      "excel_sub_dir": "vip",
+      "export_name": "recharge_first_time_cfg"
+    },
+    {
+      "excel_name": "世界boss.xlsx",
+      "excel_sub_dir": "副本",
+      "export_name": "world_boss_cfg"
+    },
+    {
       "excel_name": "test_key.xlsx",
       "excel_sub_dir": "test",
       "export_name": "test_key"

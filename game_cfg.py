@@ -16,9 +16,11 @@ cur_sheet_type_col = None
 
 cur_sheet_column_names = None
 
-all_tables = ['VIP等级表.xlsx', '锻造强化.xlsx', '装备通用.xlsx', '锻造宝石.xlsx', 'test_key.xlsx', 'test_key_value.xlsx',
+all_tables = ['VIP等级表.xlsx', '锻造强化.xlsx', '装备通用.xlsx', '锻造宝石.xlsx', '材料副本.xlsx', '材料副本地图.xlsx', '首充.xlsx',
+              "世界boss.xlsx", '通天塔.xlsx','test_key.xlsx',
+              'test_key_value.xlsx',
               'test_un_primary_key2columns.xlsx']
-output_tables = ['锻造宝石.xlsx']
+output_tables = ['世界boss.xlsx']
 
 
 def load_file_cfg():
