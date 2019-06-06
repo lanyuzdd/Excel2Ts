@@ -6,17 +6,22 @@
     {
       "excel_name": "VIP等级表.xlsx",
       "excel_sub_dir": "VIP",
-      "export_name": "vip_level"
+      "export_name": "vip_level_cfg"
     },
     {
-      "excel_name": "锻造强化.xlsx",
-      "excel_sub_dir": "锻造",
-      "export_name": "upgrade_equip_slot_qh_cfg"
+      "excel_name": "VIP等级特权文字.xlsx",
+      "excel_sub_dir": "VIP",
+      "export_name": "vip_privilege_text_cfg"
     },
     {
-      "excel_name": "锻造附魔.xlsx",
+      "excel_name": "VIP等级奖励.xlsx",
+      "excel_sub_dir": "VIP",
+      "export_name": "vip_level_award_cfg"
+    },
+    {
+      "excel_name": "锻造系统.xlsx",
       "excel_sub_dir": "锻造",
-      "export_name": "upgrade_equip_slot_yh_cfg"
+      "export_name": "upgrade_equip_site_cfg"
     },
     {
       "excel_name": "锻造宝石.xlsx",
@@ -49,9 +54,44 @@
       "export_name": "recharge_first_time_cfg"
     },
     {
+      "excel_name": "充值.xlsx",
+      "excel_sub_dir": "vip",
+      "export_name": "recharge_cfg"
+    },
+    {
+      "excel_name": "日常活跃.xlsx",
+      "excel_sub_dir": "活动",
+      "export_name": "daily_task_cfg"
+    },
+    {
+      "excel_name": "日常活跃任务名索引.xlsx",
+      "excel_sub_dir": "活动",
+      "export_name": "daily_task_name_id_map"
+    },
+    {
       "excel_name": "世界boss.xlsx",
       "excel_sub_dir": "副本",
       "export_name": "world_boss_cfg"
+    },
+    {
+      "excel_name": "世界boss奖励展示.xlsx",
+      "excel_sub_dir": "副本",
+      "export_name": "world_boss_awards_cfg"
+    },
+    {
+      "excel_name": "快速获得.xlsx",
+      "excel_sub_dir": "",
+      "export_name": "get_way_cfg"
+    },
+    {
+      "excel_name": "快速获得商品.xlsx",
+      "excel_sub_dir": "",
+      "export_name": "get_way_good_cfg"
+    },
+    {
+      "excel_name": "VIP系统.xlsx",
+      "excel_sub_dir": "VIP",
+      "export_name": "vip_system_cfg"
     },
     {
       "excel_name": "test_key.xlsx",

@@ -16,11 +16,17 @@ cur_sheet_type_col = None
 
 cur_sheet_column_names = None
 
-all_tables = ['VIP等级表.xlsx', '锻造强化.xlsx', '装备通用.xlsx', '锻造宝石.xlsx', '材料副本.xlsx', '材料副本地图.xlsx', '首充.xlsx',
-              "世界boss.xlsx", '通天塔.xlsx','test_key.xlsx',
+# 为了方便复制
+all_tables = ['VIP等级表.xlsx', 'VIP等级特权文字.xlsx', 'VIP系统.xlsx', 'VIP等级奖励', '首充.xlsx',
+              '锻造系统.xlsx', '装备通用.xlsx', '锻造宝石.xlsx',
+              '材料副本.xlsx', '材料副本地图.xlsx',
+              "世界boss.xlsx", '通天塔.xlsx', '世界boss奖励展示.xlsx',
+              '快速获得.xlsx', '快速获得商品.xlsx',
+              '日常活跃.xlsx', '日常活跃任务名索引.xlsx',
+              'test_key.xlsx',
               'test_key_value.xlsx',
               'test_un_primary_key2columns.xlsx']
-output_tables = ['世界boss.xlsx']
+output_tables = ['快速获得商品.xlsx']
 
 
 def load_file_cfg():

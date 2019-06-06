@@ -1,6 +1,6 @@
 num = 0xffcc00
 
-print(num)
+# print(num)
 
 
 # <A:255,R:255,G:186,B:87>
@@ -16,7 +16,7 @@ def color2arbg(color):
     return color_tmp
 
 
-print(color2arbg(0x767676))
+print(color2arbg(0xBCA98E))
 
 str01 = '0000000000000000000000000000000000000000000001111111111111111000000000000000000000000000000000'
-print(len(str01))
+# print(len(str01))
