@@ -18,13 +18,13 @@ sys_key_specifiers = ['key', 'primary_key', 'key_value_key']
 __var_def = r'^[_a-zA-Z][_a-zA-Z0-9]*$'
 
 
-class ColumnBaseValue(Enum):
+class ColumnBaseValue():
     type_string: str = "string"
     type_number: str = "number"
     type_comment: str = "comment"
 
 
-class ColumnSpecifier(Enum):
+class ColumnSpecifier():
     key: str = "key"
     primary_key: str = "primary_key"
     key_value_key: str = "key_value_key"
@@ -217,7 +217,10 @@ class Sheet:
 
     # 表格非注释列
     def group_column_by_comment(self):
+        print(ColumnBaseValue.type_comment)
+        print(type(ColumnBaseValue.type_comment))
         for column in self.column_type_list:
+            print(column.base_type, ColumnBaseValue.type_comment)
             if column.base_type != ColumnBaseValue.type_comment:
                 self.value_type_columns.append(column)
             else:

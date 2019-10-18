@@ -112,7 +112,11 @@
       "excel_name": "学生选课表.xlsx",
       "excel_sub_dir": "test",
       "export_name": "student_lession"
+    },
+    {
+      "excel_name": "学生选课表key.xlsx",
+      "excel_sub_dir": "test",
+      "export_name": "student_lession_key"
     }
-
   ]
 }
