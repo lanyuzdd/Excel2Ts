@@ -4,10 +4,11 @@ import sys
 import json
 import re
 import json2lua
-import value_logic
+import platform
+import workbook_data
+from typing import List
 
 file_cfg = None
-cfg_list = []
 
 cur_book_name = None
 cur_sheet_name = None
@@ -17,21 +18,32 @@ cur_sheet_type_col = None
 cur_sheet_column_names = None
 
 # 为了方便复制
-all_tables = ['VIP等级表.xlsx', 'VIP等级特权文字.xlsx', 'VIP系统.xlsx', 'VIP等级奖励', '首充.xlsx',
-              '锻造系统.xlsx', '装备通用.xlsx', '锻造宝石.xlsx',
-              '材料副本.xlsx', '材料副本地图.xlsx',
-              "世界boss.xlsx", '通天塔.xlsx', '世界boss奖励展示.xlsx',
-              '快速获得.xlsx', '快速获得商品.xlsx',
-              '日常活跃.xlsx', '日常活跃任务名索引.xlsx',
-              'test_key.xlsx',
-              'test_key_value.xlsx',
-              'test_un_primary_key2columns.xlsx']
-output_tables = ['快速获得商品.xlsx']
+# all_tables = ['VIP等级表.xlsx', 'VIP等级特权文字.xlsx', 'VIP系统.xlsx', 'VIP等级奖励', '首充.xlsx',
+#               '锻造系统.xlsx', '装备通用.xlsx', '锻造宝石.xlsx',
+#               '材料副本.xlsx', '材料副本地图.xlsx',
+#               "世界boss.xlsx", '通天塔.xlsx', '世界boss奖励展示.xlsx',
+#               '快速获得.xlsx', '快速获得商品.xlsx',
+#               '日常活跃.xlsx', '日常活跃任务名索引.xlsx',
+#               'test_key.xlsx',
+#               'test_key_value.xlsx','学生选课表.xlsx'，
+#               'test_un_primary_key2columns.xlsx']
+
+# 要导出的工作簿文件名
+output_tables = ['学生选课表.xlsx']
 
 
+# 加载配置文件，说明excel路径、导出文件路径
 def load_file_cfg():
     global file_cfg
+    # print(os.name)
+    # print(platform.system())
+    sys_name = platform.system()
+
     file_cfg_path = os.path.join(sys.path[0], 'assets', 'file_cfg.json')
+
+    if sys_name == 'Darwin':
+        file_cfg_path = os.path.join(sys.path[0], 'assets', 'file_cfg_mac.json')
+
     with open(file_cfg_path, 'r', encoding='utf-8') as file:
         file_cfg = json.load(file)
 
@@ -54,6 +66,7 @@ def load_file_cfg():
         pass
 
 
+# 加载要导出的excel表文件列表
 def load_excel_files():
     for table_item in file_cfg['tables']:
         if not table_item['excel_name'] in output_tables:
@@ -62,19 +75,26 @@ def load_excel_files():
     pass
 
 
+# 加载要导出的excel表文件
 def load_excel_file(table_item_cfg):
     print("加载工作簿：" + table_item_cfg['excel_name'])
 
     excel_path = table_item_cfg['path']
 
     global cur_book_name
-    cur_book_name = table_item_cfg['excel_name']
+    cur_book_name = table_item_cfg['export_name']
+
+    if not workbook_data.is_var_name_ok(cur_book_name):
+        print("工作簿的英文名（class_name）非法，请检查配置文件！" + cur_book_name)
+        sys.exit(5)
 
     wb = xlwings.Book(excel_path)
     sheets = wb.sheets
     # print(len(sheets))
     book_json_sheet_data = {}
     book_lua_sheet_data = {}
+    workbook = workbook_data.Workbook()
+    workbook.name = cur_book_name
     for i in range(0, len(sheets)):
         sheet = sheets[i]
         # print(sheet.name) #Sheet1
@@ -83,11 +103,15 @@ def load_excel_file(table_item_cfg):
         if a1_value is None:
             continue
 
+        if not workbook_data.is_var_name_ok(sheet.name):
+            print("工作簿的表（sheet）名非法，请修改！" + sheet.name)
+            sys.exit(6)
+
         # print('read', sheet.name)
 
         book_json_sheet_data[sheet.name] = get_sheet_data_template()
         book_lua_sheet_data[sheet.name] = get_sheet_data_template()
-        read_sheet(sheet, book_json_sheet_data[sheet.name], book_lua_sheet_data[sheet.name])
+        read_sheet(sheet, book_json_sheet_data[sheet.name], book_lua_sheet_data[sheet.name], workbook)
         pass
 
     # wb.close()
@@ -107,6 +131,7 @@ def load_excel_file(table_item_cfg):
     pass
 
 
+# 描述表结构的模板
 def get_sheet_data_template():
     # primary_key 表含有主键
     # un_primary_key2columns 表不含有主键，共两列值
@@ -116,8 +141,11 @@ def get_sheet_data_template():
 
 
 # 读取某一张表
-#
-def read_sheet(sheet, sheet_json_data, sheet_lua_data):
+# sheet excel sheet对象
+# sheet_json_data json的表结构
+# sheet_lua_data lua的表结构
+def read_sheet(sheet, sheet_json_data, sheet_lua_data, workbook: workbook_data.Workbook):
+    print("读取表:" + sheet.name)
     global cur_sheet_name
     cur_sheet_name = sheet.name
 
@@ -126,37 +154,57 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data):
     #
     # print('row_num', row_num, 'col_num', col_num)
 
+    #
     rng = sheet.range('A1').expand()
+    # 表行数
     row_num = rng.last_cell.row
+    # 表列数
     col_num = rng.last_cell.column
 
     print('row_num', row_num, 'col_num', col_num)
 
-    # 读取表第一行属性
+    # 读取表第一行列名
     column_names = sheet.range('A1').expand('right').value
-    # 读取表第二行类型
+    # 读取表第二行值类型
     column_types = sheet.range('A2').expand('right').value
+    # 读取表第三行注释
+    column_comments = sheet.range('A3').expand('right').value
 
-    column_types_change_comment_column_type(column_types, column_names)
+
 
     # try:
-    sheet_column_type_list = validate_value_type_column(column_types)
+    wb_sheet = workbook_data.Sheet(cur_sheet_name, column_names, column_types, column_comments)
     # except TypeError as te:
     #     print(str(te.args))
     #     sys.exit(3)
+    workbook.sheets.append(wb_sheet)
 
-    key_value_type_data = value_logic.get_key_prefix_value_type_data(sheet_column_type_list)
+    workbook.print_sheets_names()
+
+    sheet_column_type_list = wb_sheet.column_type_list
+
+    # todo 删除此块代码
+    # if wb_sheet.key_column_type != '':
+    #     if wb_sheet.key_column_type == 'primary_key':
+    #         sheet_json_data['primary_key'] = True
+    #         sheet_lua_data['primary_key'] = True
+    #     elif wb_sheet.key_column_type == 'key':
+    #         uncomment_column_num = len(wb_sheet.value_type_columns)
+    #         if uncomment_column_num == 2:
+    #             sheet_json_data['un_primary_key2columns'] = True
+    #             sheet_lua_data['un_primary_key2columns'] = True
+    #
+    # sheet_json_data["value_type_column"] = sheet_column_type_list
+    # sheet_json_data["name_column"] = sheet_column_type_list
+    #
+    # sheet_json_data["key_column_idx"] = 0
+
+    # print("sheet_json_data")
+    # print(json.dumps(sheet_json_data))
+
     key_column_idx = -1
-    if key_value_type_data is not None:
-        key_column_idx = sheet_column_type_list.index(key_value_type_data)
-        if key_value_type_data['key_prefix'] == 'primary_key':
-            sheet_json_data['primary_key'] = True
-            sheet_lua_data['primary_key'] = True
-        elif key_value_type_data['key_prefix'] == 'key':
-            uncomment_column_num = value_logic.get_uncomment_column_num_of_sheet(sheet_column_type_list)
-            if uncomment_column_num == 2:
-                sheet_json_data['un_primary_key2columns'] = True
-                sheet_lua_data['un_primary_key2columns'] = True
+    if wb_sheet.key_column_type != "":
+        key_column_idx = 0
 
     # 二维数组，excel读取的原始行列数据
     row_json_data_list = []
@@ -189,11 +237,11 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data):
                 continue
 
             # print(value_type_data_list[column_idx]['base_type'])
-            if sheet_column_type_list[column_idx]['base_type'] == 'int':
+            if sheet_column_type_list[column_idx].base_type == 'int':
                 cell_value = int(cell_value)
                 # print('int ', cell_value)
 
-            if sheet_column_type_list[column_idx]['base_type'] == 'string' and str(cell_value).isdigit():
+            if sheet_column_type_list[column_idx].base_type == 'string' and str(cell_value).isdigit():
                 match = re.match(r'[1-9][0-9]*', str(cell_value))
                 if match:
                     cell_value = str(int(cell_value))
@@ -205,8 +253,8 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data):
         row_json_data_list.append(row_json_data)
         row_lua_data_list.append(row_lua_data)
 
-        print("行数据")
-        print(json.dumps(row_lua_data))
+        # print("行数据")
+        # print(json.dumps(row_lua_data))
 
         pass
 
@@ -214,9 +262,11 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data):
     print(json.dumps(row_json_data_list))
     print(json.dumps(row_lua_data_list))
 
+    return
+
     # 所有行数据读取完毕，再组织
 
-    if key_column_idx == -1:
+    if wb_sheet.key_column_type == "":
         # 没有键值对
         sheet_json_data['type'] = 'list'
         sheet_lua_data['type'] = 'list'
@@ -226,7 +276,7 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data):
         for row_lua_data_item in row_lua_data_list:
             sheet_lua_data['list'].append(row_lua_data_item)
 
-    elif key_value_type_data['key_prefix'] == 'key_value_key':
+    elif wb_sheet.key_column_type == workbook_data.ColumnBaseValue.key_value_key:
         # 纯键值对
         sheet_json_data['type'] = 'map'
         sheet_lua_data['type'] = 'map'
@@ -317,6 +367,7 @@ def restructure_sheet_lua_original_data_with_key(sheet_lua_data, row_lua_data_li
     pass
 
 
+# todo
 def validate_cell_value(value, value_type, column_index):
     res = True
 
@@ -326,18 +377,6 @@ def validate_cell_value(value, value_type, column_index):
         return res
 
     return res
-
-
-# 验证表第二行数据类型是否正确，返回数据类型列表
-def validate_value_type_column(column_types):
-    sheet_column_type_list = []
-    for value_type in column_types:
-        print('value_type', value_type)
-        value_type_item = value_logic.get_column_value_type_data(value_type)
-        print('value_type_item', json.dumps(value_type_item))
-        sheet_column_type_list.append(value_type_item)
-    value_logic.check_sheet_column_type_list(sheet_column_type_list)
-    return sheet_column_type_list
 
 
 def write_book_data(book_json_sheet_data, book_lua_sheet_data, table_item_cfg):
@@ -357,44 +396,33 @@ def write_book_data(book_json_sheet_data, book_lua_sheet_data, table_item_cfg):
                   ensure_ascii=False)
         no_book_json_sheet_data_file.close()
 
-    kv_lua_path = os.path.join(file_cfg['export_path'] + table_item_cfg['excel_sub_dir'],
-                               table_item_cfg['export_name'] + '_kv.lua')
+    # kv_lua_path = os.path.join(file_cfg['export_path'] + table_item_cfg['excel_sub_dir'],
+    #                            table_item_cfg['export_name'] + '_kv.lua')
 
-    with open(kv_lua_path, 'w', encoding='utf-8') as kv_lua_file:
-        content = 'local ' + table_item_cfg['export_name'] + ' = ' + json2lua.dic_to_lua_str(book_json_sheet_data)
-        kv_lua_file.write(content)
-        kv_lua_file.close()
+    # with open(kv_lua_path, 'w', encoding='utf-8') as kv_lua_file:
+    #     content = 'local ' + table_item_cfg['export_name'] + ' = ' + json2lua.dic_to_lua_str(book_json_sheet_data)
+    #     kv_lua_file.write(content)
+    #     kv_lua_file.close()
 
-    lua_path = os.path.join(file_cfg['export_path'] + table_item_cfg['excel_sub_dir'],
-                            table_item_cfg['export_name'] + '.lua')
+    # lua_path = os.path.join(file_cfg['export_path'] + table_item_cfg['excel_sub_dir'],
+    #                         table_item_cfg['export_name'] + '.lua')
+    #
+    # with open(lua_path, 'w', encoding='utf-8') as lua_file:
+    #     content = 'local ' + table_item_cfg['export_name'] + ' = ' + json2lua.dic_to_lua_str(book_lua_sheet_data)
+    #     lua_file.write(content)
+    #     lua_file.close()
 
-    with open(lua_path, 'w', encoding='utf-8') as lua_file:
-        content = 'local ' + table_item_cfg['export_name'] + ' = ' + json2lua.dic_to_lua_str(book_lua_sheet_data)
-        lua_file.write(content)
-        lua_file.close()
+    write_book_data_d_ts(book_json_sheet_data, table_item_cfg)
 
+    pass
+
+
+def write_book_data_d_ts(book_json_sheet_data, table_item_cfg):
     pass
 
 
 # 验证主键列的所有值是否唯一
 def validate_primary_key_column(sheet, column_idx):
-    pass
-
-
-# 注释列的数值类型改成comment
-def column_types_change_comment_column_type(column_types, column_names):
-    comment_idxes = []
-    for column_name in column_names:
-        print('column_types_change_comment_column_type ', column_name[0:7])
-        if column_name[0:7] == 'comment':
-            idx = column_names.index(column_name)
-            # print(idx)
-            comment_idxes.append(idx)
-    for comment_idx in comment_idxes:
-        column_types[comment_idx] = 'comment'
-
-    print(column_types)
-
     pass
 
 

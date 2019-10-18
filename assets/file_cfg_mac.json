@@ -1,0 +1,118 @@
+{
+  "info": "游戏配置excel转lua",
+  "excel_root_path": "/Users/zhengxijun/Documents/pyws/game_excel/",
+  "export_path": "/Users/zhengxijun/Documents/pyws/game_excel/export/",
+  "tables": [
+    {
+      "excel_name": "VIP等级表.xlsx",
+      "excel_sub_dir": "VIP",
+      "export_name": "vip_level_cfg"
+    },
+    {
+      "excel_name": "VIP等级特权文字.xlsx",
+      "excel_sub_dir": "VIP",
+      "export_name": "vip_privilege_text_cfg"
+    },
+    {
+      "excel_name": "VIP等级奖励.xlsx",
+      "excel_sub_dir": "VIP",
+      "export_name": "vip_level_award_cfg"
+    },
+    {
+      "excel_name": "锻造系统.xlsx",
+      "excel_sub_dir": "锻造",
+      "export_name": "upgrade_equip_site_cfg"
+    },
+    {
+      "excel_name": "锻造宝石.xlsx",
+      "excel_sub_dir": "锻造",
+      "export_name": "upgrade_equip_slot_stone_cfg"
+    },
+    {
+      "excel_name": "装备通用.xlsx",
+      "excel_sub_dir": "锻造",
+      "export_name": "sys_equip"
+    },
+    {
+      "excel_name": "材料副本地图.xlsx",
+      "excel_sub_dir": "副本",
+      "export_name": "material_instancing_map_cfg"
+    },
+    {
+      "excel_name": "材料副本.xlsx",
+      "excel_sub_dir": "副本",
+      "export_name": "material_instancing"
+    },
+    {
+      "excel_name": "通天塔.xlsx",
+      "excel_sub_dir": "副本",
+      "export_name": "sky_high_tower_cfg"
+    },
+    {
+      "excel_name": "首充.xlsx",
+      "excel_sub_dir": "vip",
+      "export_name": "recharge_first_time_cfg"
+    },
+    {
+      "excel_name": "充值.xlsx",
+      "excel_sub_dir": "vip",
+      "export_name": "recharge_cfg"
+    },
+    {
+      "excel_name": "日常活跃.xlsx",
+      "excel_sub_dir": "活动",
+      "export_name": "daily_task_cfg"
+    },
+    {
+      "excel_name": "日常活跃任务名索引.xlsx",
+      "excel_sub_dir": "活动",
+      "export_name": "daily_task_name_id_map"
+    },
+    {
+      "excel_name": "世界boss.xlsx",
+      "excel_sub_dir": "副本",
+      "export_name": "world_boss_cfg"
+    },
+    {
+      "excel_name": "世界boss奖励展示.xlsx",
+      "excel_sub_dir": "副本",
+      "export_name": "world_boss_awards_cfg"
+    },
+    {
+      "excel_name": "快速获得.xlsx",
+      "excel_sub_dir": "",
+      "export_name": "get_way_cfg"
+    },
+    {
+      "excel_name": "快速获得商品.xlsx",
+      "excel_sub_dir": "",
+      "export_name": "get_way_good_cfg"
+    },
+    {
+      "excel_name": "VIP系统.xlsx",
+      "excel_sub_dir": "VIP",
+      "export_name": "vip_system_cfg"
+    },
+    {
+      "excel_name": "test_key.xlsx",
+      "excel_sub_dir": "test",
+      "export_name": "test_key"
+    },
+    {
+      "excel_name": "test_key_value.xlsx",
+      "excel_sub_dir": "test",
+      "export_name": "test_key_value"
+    },
+    {
+      "excel_name": "test_un_primary_key2columns.xlsx",
+      "excel_sub_dir": "test",
+      "export_name": "test_un_primary_key2columns"
+    },
+    {
+      "excel_name": "学生选课表.xlsx",
+      "excel_sub_dir": "test",
+      "export_name": "student_lession"
+    }
+
+  ]
+}

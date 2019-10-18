@@ -1,0 +1,15 @@
+[
+  {
+    "project_name": "双扣",
+    "excel_git_rep": "excel git仓库地址",
+    "project_package_name": "gamecfgsk",
+    "export_git_rep": "要导出的配置文件的git仓库地址",
+    "export_path": "assets/cfg",
+    "excel_files": [
+      {
+        "path": "excel/锻造系统.xlsx",
+        "class_name": "EquipSys"
+      }
+    ]
+  }
+]
