@@ -1,7 +1,7 @@
 {
   "info": "游戏配置excel转lua",
-  "excel_root_path": "D:\\game_excel\\",
-  "export_path": "D:\\game_excel\\export\\",
+  "excel_root_path": "F:\\pws\\game_excel\\",
+  "export_path": "F:\\pws\\game_excel\\export\\",
   "tables": [
     {
       "excel_name": "VIP等级表.xlsx",
@@ -107,6 +107,16 @@
       "excel_name": "test_un_primary_key2columns.xlsx",
       "excel_sub_dir": "test",
       "export_name": "test_un_primary_key2columns"
+    },
+    {
+      "excel_name": "学生选课表.xlsx",
+      "excel_sub_dir": "test",
+      "export_name": "student_lession"
+    },
+    {
+      "excel_name": "学生选课表key.xlsx",
+      "excel_sub_dir": "test",
+      "export_name": "student_lession_key"
     }
   ]
 }

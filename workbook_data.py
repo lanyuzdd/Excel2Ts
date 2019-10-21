@@ -17,19 +17,68 @@ sys_key_specifiers = ['key', 'primary_key', 'key_value_key']
 # 变量命名规范，用作列名表名验证
 __var_def = r'^[_a-zA-Z][_a-zA-Z0-9]*$'
 
+reg_int = r'-?[1-9]\d*$'
+reg_float = r'-?([1-9]\d*\.\d*|0\.\d*[1-9]\d*|0?\.0+|0)$'
 
-class ColumnBaseValue():
+
+class ColumnBaseValue:
     type_string: str = "string"
     type_number: str = "number"
     type_comment: str = "comment"
 
 
-class ColumnSpecifier():
+class ColumnSpecifier:
     key: str = "key"
     primary_key: str = "primary_key"
     key_value_key: str = "key_value_key"
     key_value_value: str = "key_value_value"
+    # 无键值对
+    no_key = 'no_key'
     # list = "list"
+
+
+class StructType:
+    map: str = "map"
+    list: str = "list"
+
+
+# class Struct:
+#
+#     def __init__(self, struct_name: str, value_type, struct_list, parent):
+#         # StructType
+#         self.struct_name = struct_name
+#         self.value_type = value_type
+#         self.struct_list = struct_list
+#         # Struct
+#         self.parent = parent
+#
+#         if self.struct_list is None or len(self.struct_list) == 0:
+#             raise TypeError("结构定义没有属性")
+#
+#         pass
+#
+#     def get_ts_define(self):
+#
+#         if self.struct_list is None:
+#             return ''
+#
+#         content = 'interface {'
+#
+#         for struct_item in self.struct_list:
+#             content += struct_item.struct_name + ':'
+#             is_base_type = struct_item.value_type == ColumnBaseValue.type_number
+#             is_base_type = is_base_type or struct_item.value_type == ColumnBaseValue.type_string
+#
+#             if is_base_type:
+#                 content += struct_item.struct_name + struct_item.value_type + ';'
+#             elif len(self.struct_list) == 1:
+#                 content += struct_item.struct_name + ';'
+#             else:
+#                 content += 'Array<' + struct_item.struct_name + '>;'
+#                 pass
+#
+#         content += '}'
+#         return content
 
 
 class SheetColumn:
@@ -46,6 +95,9 @@ class SheetColumn:
     # 列在值列中的索引
     value_index = 0
 
+    # 键值列、注释列在写行数据的时候被忽略
+    # ignored = False
+
     # def is_key_column(self):
     #     is_key_col = ColumnSpecifier.key in self.type_specifier or
     #     return is_key_col
@@ -53,31 +105,57 @@ class SheetColumn:
     def is_comment_col(self):
         return self.base_type == ColumnBaseValue.type_comment
 
+    # 列检验值是否符合定义;值符合定义，将值转成正确的数据类型返回
+    def validate_cell_value_by_column_type(self, cell_value: str, row_idx: int):
+        # todo 检测空单元格
+        if cell_value == '' or reg_int is None:
+            raise TypeError("检测到空单元格 列：" + self.name + " 行数：" + row_idx)
+
+        # 值符合定义，将值转成正确的数据类型
+        # 检测数字单元格
+        if self.base_type == ColumnBaseValue.type_number:
+            if re.match(reg_int, cell_value):
+                cell_value = int(cell_value)
+                return cell_value
+            if re.match(reg_float, cell_value):
+                cell_value = float(cell_value)
+                return cell_value
+            else:
+                raise TypeError("值不是数字 列：" + self.name + " 行数：" + row_idx)
+
+        cell_value = cell_value + ''
+        return cell_value
+
 
 class Sheet:
-    # name = ""
-    #
-    # column_type_list: List[SheetColumn] = []
-    # value_type_columns: List[SheetColumn] = []
-    # comment_type_columns: List[SheetColumn] = []
 
     def __init__(self, name: str, column_names: List[str], column_types: List[str], column_comments: List[str]):
+        # 表名
         self.name = name
+        # 表的所有列
         self.column_type_list: List[SheetColumn] = []
+        # 表的所有列除了注释列
         self.value_type_columns: List[SheetColumn] = []
+        # 表的所有注释列
         self.comment_type_columns: List[SheetColumn] = []
+
+        # 键值列的类型，在这里定义，值见ColumnSpecifier
+        self.key_column_type = ColumnSpecifier.no_key
+
+        # 表的原始行数据
+        self.origin_value_rows = []
+
+        self.struct = None
 
         column_types_change_comment_column_type(column_types, column_names)
         self.__init_column_structure(column_names, column_types, column_comments)
-        pass
 
-    # 在validate_sheet_columns赋值，若为''则表示
-    key_column_type = ""
+        self.__init_struct()
+        pass
 
     def __init_column_structure(self, column_names: List[str], column_types: List[str], column_comments: List[str]):
 
-        print("init_column_structure")
-        print(len(self.column_type_list))
+        # print("init_column_structure")
 
         for i in range(0, len(column_names)):
             col_name = column_names[i]
@@ -92,6 +170,18 @@ class Sheet:
         self.validate_sheet_columns()
 
         pass
+
+    # def __init_struct(self):
+    #     if self.key_column_type == ColumnSpecifier.no_key:
+    #         col_structs = []
+    #         for col_item in self.value_type_columns:
+    #             col_struct = Struct(col_item.name, col_item.base_type, None, None)
+    #             col_structs.append(col_struct)
+    #             pass
+    #         pass
+    #
+    #         self.struct = Struct(self.name, self.name)
+    #     pass
 
     # 解析表格列的值类型数据，int|key，int|list
     def get_column_value_type_data(col_name: str, col_type: str, col_comment: str) -> SheetColumn:
@@ -198,8 +288,8 @@ class Sheet:
                     key_prefix_num = key_prefix_num + 1
                     if key_prefix_num > 1:
                         raise TypeError("一个表所有列只能有一个key类型修饰：" + str(key_prefix_num) + " " + json.dumps(all_prefixes))
-                    if column.sheet_index != 0:
-                        raise TypeError("key类型修饰列必须放在第一列：")
+                    # if column.sheet_index != 0:
+                    #     raise TypeError("key类型修饰列必须放在第一列：")
                 all_prefixes.append(prefix_item)
 
             # print('all_prefixes', all_prefixes)
