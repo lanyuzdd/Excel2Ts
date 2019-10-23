@@ -1,4 +1,3 @@
-from enum import Enum, unique
 from typing import List
 import json
 import re
@@ -37,49 +36,15 @@ class ColumnSpecifier:
     # list = "list"
 
 
-class StructType:
-    map: str = "map"
-    list: str = "list"
-
-
-# class Struct:
+# class StructType:
+#     # 纯键值对列转成静态属性常量
+#     static_prop: str = "static_prop"
+#     # 无键的表转成列表
+#     member_prop_list: str = "member_prop_list"
+#     # 带键的表转成字典
+#     member_prop_map_list: str = "member_prop_map_list"
 #
-#     def __init__(self, struct_name: str, value_type, struct_list, parent):
-#         # StructType
-#         self.struct_name = struct_name
-#         self.value_type = value_type
-#         self.struct_list = struct_list
-#         # Struct
-#         self.parent = parent
 #
-#         if self.struct_list is None or len(self.struct_list) == 0:
-#             raise TypeError("结构定义没有属性")
-#
-#         pass
-#
-#     def get_ts_define(self):
-#
-#         if self.struct_list is None:
-#             return ''
-#
-#         content = 'interface {'
-#
-#         for struct_item in self.struct_list:
-#             content += struct_item.struct_name + ':'
-#             is_base_type = struct_item.value_type == ColumnBaseValue.type_number
-#             is_base_type = is_base_type or struct_item.value_type == ColumnBaseValue.type_string
-#
-#             if is_base_type:
-#                 content += struct_item.struct_name + struct_item.value_type + ';'
-#             elif len(self.struct_list) == 1:
-#                 content += struct_item.struct_name + ';'
-#             else:
-#                 content += 'Array<' + struct_item.struct_name + '>;'
-#                 pass
-#
-#         content += '}'
-#         return content
-
 
 class SheetColumn:
     # 列名
@@ -98,22 +63,24 @@ class SheetColumn:
     # 键值列、注释列在写行数据的时候被忽略
     # ignored = False
 
-    # def is_key_column(self):
-    #     is_key_col = ColumnSpecifier.key in self.type_specifier or
-    #     return is_key_col
-
     def is_comment_col(self):
         return self.base_type == ColumnBaseValue.type_comment
 
     # 列检验值是否符合定义;值符合定义，将值转成正确的数据类型返回
-    def validate_cell_value_by_column_type(self, cell_value: str, row_idx: int):
+    def validate_cell_value_by_column_type(self, cell_value, row_idx: int):
         # todo 检测空单元格
-        if cell_value == '' or reg_int is None:
+        if cell_value == '' or cell_value is None:
             raise TypeError("检测到空单元格 列：" + self.name + " 行数：" + row_idx)
 
+        # 有可能是<class 'float'>，转成字符串
+        cell_value = str(cell_value)
         # 值符合定义，将值转成正确的数据类型
         # 检测数字单元格
         if self.base_type == ColumnBaseValue.type_number:
+            # print("reg_int")
+            # print(reg_int)
+            # print(cell_value)
+            # print(type(cell_value))
             if re.match(reg_int, cell_value):
                 cell_value = int(cell_value)
                 return cell_value
@@ -139,18 +106,19 @@ class Sheet:
         # 表的所有注释列
         self.comment_type_columns: List[SheetColumn] = []
 
-        # 键值列的类型，在这里定义，值见ColumnSpecifier
+        # 键值列的类型在这里定义
         self.key_column_type = ColumnSpecifier.no_key
+        # -1表示非键值列，0以上有效值表示键列索引
+        self.key_column_idx = -1
 
         # 表的原始行数据
         self.origin_value_rows = []
 
-        self.struct = None
+        self.struct = []
 
         column_types_change_comment_column_type(column_types, column_names)
         self.__init_column_structure(column_names, column_types, column_comments)
 
-        self.__init_struct()
         pass
 
     def __init_column_structure(self, column_names: List[str], column_types: List[str], column_comments: List[str]):
@@ -171,17 +139,70 @@ class Sheet:
 
         pass
 
-    # def __init_struct(self):
-    #     if self.key_column_type == ColumnSpecifier.no_key:
-    #         col_structs = []
-    #         for col_item in self.value_type_columns:
-    #             col_struct = Struct(col_item.name, col_item.base_type, None, None)
-    #             col_structs.append(col_struct)
-    #             pass
-    #         pass
-    #
-    #         self.struct = Struct(self.name, self.name)
-    #     pass
+    def get_ts_struct_define(self):
+
+        if self.key_column_type == ColumnSpecifier.no_key:
+            # 无键的表转成列表
+            ts_define = "export interface " + self.name + "{\n"
+            for col in self.value_type_columns:
+                ts_define += "/** " + col.comment + " **/\n"
+                ts_define += col.name + ":" + get_ts_type_by_col_base_value_type(col.base_type) + ";\n"
+                pass
+            ts_define += "}\n"
+
+            class_prop = self.name + "_items :Array<" + self.name + ">;\n"
+            return ts_define, class_prop
+
+        if self.key_column_type == ColumnSpecifier.primary_key or self.key_column_type == ColumnSpecifier.key:
+            #     # 带键的表转成字典
+            key_col: SheetColumn
+            ts_define = "export interface " + self.name + " {\n"
+            for col in self.value_type_columns:
+                if col.sheet_index == self.key_column_idx:
+                    key_col = col
+                    continue
+                ts_define += "/** " + col.comment + " **/\n"
+                ts_define += col.name + ":" + get_ts_type_by_col_base_value_type(col.base_type) + ";\n"
+                pass
+            ts_define += "}\n"
+
+            class_prop = self.name + "_items_map :{[key:string]:Array<" + self.name + ">};\n"
+            return ts_define, class_prop
+
+        if self.key_column_type == ColumnSpecifier.key_value_key:
+            # 纯键值对列转成静态属性常量
+
+            ts_define = "\n"
+            class_prop = "\n"
+
+            value_col_idx = -1
+            for col in self.value_type_columns:
+                if col.sheet_index != self.key_column_idx:
+                    value_col_idx = col.sheet_index
+
+            if value_col_idx == -1:
+                raise TypeError("不是纯键值对表")
+
+            key_col = self.column_type_list[self.key_column_idx]
+            value_col = self.value_type_columns[value_col_idx]
+            for row_value in self.origin_value_rows:
+                cell_value = row_value[value_col.sheet_index]
+                cell_key = row_value[key_col.sheet_index]
+                base_type = "string"
+                if str_is_int(cell_value) or str_is_float(cell_value):
+                    base_type = "number"
+                if base_type == "number":
+                    class_prop += "static readonly " + cell_key + ":" + base_type + "=" + str(cell_value) + ";\n"
+                else:
+                    class_prop += "static readonly " + cell_key + ":" + base_type + "= '" + str(cell_value) + "';\n"
+                pass
+
+            return ts_define, class_prop
+        else:
+            raise TypeError("不存在的表键值类型：" + self.key_column_type)
+            pass
+
+        pass
 
     # 解析表格列的值类型数据，int|key，int|list
     def get_column_value_type_data(col_name: str, col_type: str, col_comment: str) -> SheetColumn:
@@ -285,6 +306,7 @@ class Sheet:
                 print('prefix_item', prefix_item)
                 if prefix_item in sys_key_specifiers:
                     self.key_column_type = prefix_item
+                    self.key_column_idx = column.sheet_index
                     key_prefix_num = key_prefix_num + 1
                     if key_prefix_num > 1:
                         raise TypeError("一个表所有列只能有一个key类型修饰：" + str(key_prefix_num) + " " + json.dumps(all_prefixes))
@@ -334,6 +356,24 @@ class Workbook:
             print(len(item.column_type_list))
         pass
 
+    # 工作簿读取所有表数据后，执行此方法
+    def get_ts_struct_define(self):
+        interface_define = ""
+        book_define = "export class "+self.name+"{\n"
+        if len(self.sheets) == 1:
+            ts_define, class_prop = self.sheets[0].get_ts_struct_define()
+            return
+
+        for sheet in self.sheets:
+            ts_define, class_prop = sheet.get_ts_struct_define()
+            book_define += class_prop
+            interface_define += ts_define
+            pass
+
+        book_define+="}\n"
+        book_define += interface_define
+        return book_define
+
 
 # 检测工作簿英文名、表名、列名是否符合变量的定义规范
 def is_var_name_ok(var_name):
@@ -357,3 +397,24 @@ def column_types_change_comment_column_type(column_types: List[str], column_name
     print(column_types)
 
     pass
+
+
+def get_ts_type_by_col_base_value_type(col_base_value_type: str):
+    ts_type = ""
+    if col_base_value_type == ColumnBaseValue.type_string:
+        ts_type = "string"
+    elif col_base_value_type == ColumnBaseValue.type_number:
+        ts_type = "number"
+    else:
+        raise TypeError("非法的基础类型：" + col_base_value_type)
+    return ts_type
+
+
+def str_is_int(content):
+    content = str(content)
+    return re.match(reg_int, content) is not None
+
+
+def str_is_float(content):
+    content = str(content)
+    return re.match(reg_float, content) is not None

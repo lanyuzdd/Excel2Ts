@@ -114,6 +114,15 @@ def load_excel_file(table_item_cfg):
         read_sheet(sheet, book_json_sheet_data[sheet.name], book_lua_sheet_data[sheet.name], workbook)
         pass
 
+    ts_define = workbook.get_ts_struct_define()
+
+    tmp_ts_path = os.path.join(sys.path[0],'assets',workbook.name+'.ts')
+    with open(tmp_ts_path, 'w', encoding='utf-8') as ts_file:
+        ts_file.write(ts_define)
+        ts_file.close()
+
+    return
+
     # wb.close()
 
     # sheet数据去掉map list type结构
@@ -181,7 +190,7 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data, workbook: workbook_data.W
 
     workbook.print_sheets_names()
 
-    return
+    # return
 
     # 二维数组，excel读取的原始行列数据
 
@@ -192,12 +201,12 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data, workbook: workbook_data.W
         print(row_data)
 
         # 数组,原始格式,包括注释列
-        row_data = []
+        row_cell_values = []
 
         for column_idx in range(0, col_num):
             # 忽略空单元格
-            # if len(row_data) <= column_idx:
-            #     break
+            if len(row_data) <= column_idx:
+                break
 
             # 忽略注释单元格
             column_name = column_names[column_idx]
@@ -210,10 +219,10 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data, workbook: workbook_data.W
             column = wb_sheet.column_type_list[column_idx]
             value = column.validate_cell_value_by_column_type(cell_value, row_idx)
 
-            row_data.append(cell_value)
+            row_cell_values.append(cell_value)
             pass
 
-        wb_sheet.origin_value_rows.append(row_data)
+        wb_sheet.origin_value_rows.append(row_cell_values)
 
         # print(json.dumps(row_data))
 
@@ -224,7 +233,6 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data, workbook: workbook_data.W
     # return
 
     # 所有行数据读取完毕，再组织
-
     if wb_sheet.key_column_type == workbook_data.ColumnSpecifier.no_key:
         # 没有键值对
         # sheet_json_data['type'] = 'list'
@@ -405,6 +413,5 @@ def remove_book_sheet_map_list_type_wrap_and_one_sheet_wrap(book_sheet_data):
     return simplified_book_data
 
 
-print("haha")
 load_file_cfg()
 load_excel_files()

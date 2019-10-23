@@ -1,7 +1,7 @@
 {
   "info": "游戏配置excel转lua",
-  "excel_root_path": "F:\\pws\\game_excel\\",
-  "export_path": "F:\\pws\\game_excel\\export\\",
+  "excel_root_path": "D:\\workspace\\pyws\\game_excel\\",
+  "export_path": "D:\\workspace\\pyws\\game_excel\\export\\",
   "tables": [
     {
       "excel_name": "VIP等级表.xlsx",
