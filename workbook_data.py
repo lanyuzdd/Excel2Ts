@@ -154,7 +154,7 @@ class Sheet:
             return ts_define, class_prop
 
         if self.key_column_type == ColumnSpecifier.primary_key or self.key_column_type == ColumnSpecifier.key:
-            #     # 带键的表转成字典
+            # 带键的表转成字典
             key_col: SheetColumn
             ts_define = "export interface " + self.name + " {\n"
             for col in self.value_type_columns:
@@ -202,9 +202,8 @@ class Sheet:
                 pass
 
             return ts_define, class_prop
-        else:
-            raise TypeError("不存在的表键值类型：" + self.key_column_type)
-            pass
+
+        raise TypeError("不存在的表键值类型：" + self.key_column_type)
 
         pass
 
@@ -364,7 +363,7 @@ class Workbook:
     # 工作簿读取所有表数据后，执行此方法
     def get_ts_struct_define(self):
         interface_define = ""
-        book_define = "export class "+self.name+"{\n"
+        book_define = "export class " + self.name + "{\n"
         # if len(self.sheets) == 1:
         #     ts_define, class_prop = self.sheets[0].get_ts_struct_define()
         #     return
@@ -375,7 +374,7 @@ class Workbook:
             interface_define += ts_define
             pass
 
-        book_define+="}\n"
+        book_define += "}\n"
         book_define += interface_define
         return book_define
 
@@ -390,16 +389,16 @@ def is_var_name_ok(var_name):
 # 列名以comment开头的列都是注释列，注释列默认填的值类型是string
 def column_types_change_comment_column_type(column_types: List[str], column_names: List[str]):
     comment_idxes = []
-    for column_name in column_names:
-        # print('column_types_change_comment_column_type ', column_name[0:7])
+
+    for i in range(0, len(column_names)):
+        print(i)
+        column_name = column_names[i]
         if column_name[0:7] == 'comment':
-            idx = column_names.index(column_name)
-            # print(idx)
-            comment_idxes.append(idx)
+            comment_idxes.append(i)
+        pass
+
     for comment_idx in comment_idxes:
         column_types[comment_idx] = 'comment'
-
-    print(column_types)
 
     pass
 

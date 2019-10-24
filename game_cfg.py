@@ -25,11 +25,11 @@ cur_sheet_column_names = None
 #               '快速获得.xlsx', '快速获得商品.xlsx',
 #               '日常活跃.xlsx', '日常活跃任务名索引.xlsx',
 #               'test_key.xlsx',
-#               'test_key_value.xlsx','学生选课表.xlsx'，'学生选课表key.xlsx',
+#               'test_key_value.xlsx','学生选课表.xlsx'，'学生选课表key.xlsx','学生选课表lession.xlsx',
 #               'test_un_primary_key2columns.xlsx']
 
 # 要导出的工作簿文件名
-output_tables = ['学生选课表.xlsx']
+output_tables = ['学生选课表lession.xlsx']
 
 
 # 加载配置文件，说明excel路径、导出文件路径
