@@ -114,6 +114,7 @@ def load_excel_file(table_item_cfg):
         read_sheet(sheet, book_json_sheet_data[sheet.name], book_lua_sheet_data[sheet.name], workbook)
         pass
 
+    workbook.check_workbook_class_name_diff_from_every_sheet_name()
     ts_define = workbook.get_ts_struct_define()
 
     tmp_ts_path = os.path.join(sys.path[0], 'assets', 'ts_class', workbook.name + '.ts')

@@ -139,69 +139,111 @@ class Sheet:
 
         pass
 
+    def get_ts_struct_define_of_no_key(self):
+        # 无键的表转成列表
+        ts_define = "export interface " + self.name + "{\n"
+        for col in self.value_type_columns:
+            ts_define += "/** " + col.comment + " **/\n"
+            ts_define += col.name + ":" + get_ts_type_by_col_base_value_type(col.base_type) + ";\n"
+            pass
+        ts_define += "}\n"
+
+        class_prop = self.name + "_items :Array<" + self.name + ">;\n"
+        return ts_define, class_prop
+
+    # primary_key key表的ts定义
+    def get_ts_struct_define_of_key(self):
+        is_key_type_sheet = self.key_column_type == ColumnSpecifier.primary_key or self.key_column_type == ColumnSpecifier.key
+        if not is_key_type_sheet:
+            raise TypeError("不是键值列，primary_key or key")
+
+        if len(self.value_type_columns) == 2:
+            return self.get_ts_struct_define_of_key_with_one_value_cols()
+
+        return self.get_ts_struct_define_of_key_with_multi_value_cols()
+
+    def get_ts_struct_define_of_key_with_multi_value_cols(self):
+        # 带键的表转成字典
+        ts_define = "export interface " + self.name + " {\n"
+
+        for col in self.value_type_columns:
+            if col.sheet_index == self.key_column_idx:
+                continue
+            ts_define += "/** " + col.comment + " **/\n"
+            ts_define += col.name + ":" + get_ts_type_by_col_base_value_type(col.base_type) + ";\n"
+            pass
+        ts_define += "}\n"
+
+        if self.key_column_type == ColumnSpecifier.primary_key:
+            class_prop = self.name + "_items_map :{[key:string]:" + self.name + "};\n"
+        else:
+            class_prop = self.name + "_items_map :{[key:string]:Array<" + self.name + ">};\n"
+
+        return ts_define, class_prop
+
+    # primary_key key表，值列只有一列，不做包装，直接写键值对
+    def get_ts_struct_define_of_key_with_one_value_cols(self):
+        # 带键的表转成字典
+        ts_define = ""
+
+        value_col_idx = -1
+        for col in self.value_type_columns:
+            if col.sheet_index != self.key_column_idx:
+                value_col_idx = col.sheet_index
+
+        if value_col_idx == -1:
+            raise TypeError("没有找到值列")
+
+        value_col_base_type = self.column_type_list[value_col_idx].base_type
+        ts_type = get_ts_type_by_col_base_value_type(value_col_base_type)
+
+        if self.key_column_type == ColumnSpecifier.primary_key:
+            class_prop = self.name + "_items_map :{[key:string]:" + ts_type + "};\n"
+        else:
+            class_prop = self.name + "_items_map :{[key:string]:Array<" + ts_type + ">};\n"
+
+        return ts_define, class_prop
+
+    def get_ts_struct_define_of_key_value(self):
+        # 纯键值对列转成静态属性常量
+
+        ts_define = "\n"
+        class_prop = "\n"
+
+        value_col_idx = -1
+        for col in self.value_type_columns:
+            if col.sheet_index != self.key_column_idx:
+                value_col_idx = col.sheet_index
+
+        if value_col_idx == -1:
+            raise TypeError("不是纯键值对表")
+
+        key_col = self.column_type_list[self.key_column_idx]
+        value_col = self.value_type_columns[value_col_idx]
+        for row_value in self.origin_value_rows:
+            cell_value = row_value[value_col.sheet_index]
+            cell_key = row_value[key_col.sheet_index]
+            base_type = "string"
+            if str_is_int(cell_value) or str_is_float(cell_value):
+                base_type = "number"
+            if base_type == "number":
+                class_prop += "static readonly " + cell_key + ":" + base_type + "=" + str(cell_value) + ";\n"
+            else:
+                class_prop += "static readonly " + cell_key + ":" + base_type + "= '" + str(cell_value) + "';\n"
+            pass
+
+        return ts_define, class_prop
+
     def get_ts_struct_define(self):
 
         if self.key_column_type == ColumnSpecifier.no_key:
-            # 无键的表转成列表
-            ts_define = "export interface " + self.name + "{\n"
-            for col in self.value_type_columns:
-                ts_define += "/** " + col.comment + " **/\n"
-                ts_define += col.name + ":" + get_ts_type_by_col_base_value_type(col.base_type) + ";\n"
-                pass
-            ts_define += "}\n"
-
-            class_prop = self.name + "_items :Array<" + self.name + ">;\n"
-            return ts_define, class_prop
+            return self.get_ts_struct_define_of_no_key()
 
         if self.key_column_type == ColumnSpecifier.primary_key or self.key_column_type == ColumnSpecifier.key:
-            # 带键的表转成字典
-            key_col: SheetColumn
-            ts_define = "export interface " + self.name + " {\n"
-            for col in self.value_type_columns:
-                if col.sheet_index == self.key_column_idx:
-                    key_col = col
-                    continue
-                ts_define += "/** " + col.comment + " **/\n"
-                ts_define += col.name + ":" + get_ts_type_by_col_base_value_type(col.base_type) + ";\n"
-                pass
-            ts_define += "}\n"
-
-            if self.key_column_type == ColumnSpecifier.primary_key:
-                class_prop = self.name + "_items_map :{[key:string]:" + self.name + "};\n"
-            else:
-                class_prop = self.name + "_items_map :{[key:string]:Array<" + self.name + ">};\n"
-
-            return ts_define, class_prop
+            return self.get_ts_struct_define_of_key()
 
         if self.key_column_type == ColumnSpecifier.key_value_key:
-            # 纯键值对列转成静态属性常量
-
-            ts_define = "\n"
-            class_prop = "\n"
-
-            value_col_idx = -1
-            for col in self.value_type_columns:
-                if col.sheet_index != self.key_column_idx:
-                    value_col_idx = col.sheet_index
-
-            if value_col_idx == -1:
-                raise TypeError("不是纯键值对表")
-
-            key_col = self.column_type_list[self.key_column_idx]
-            value_col = self.value_type_columns[value_col_idx]
-            for row_value in self.origin_value_rows:
-                cell_value = row_value[value_col.sheet_index]
-                cell_key = row_value[key_col.sheet_index]
-                base_type = "string"
-                if str_is_int(cell_value) or str_is_float(cell_value):
-                    base_type = "number"
-                if base_type == "number":
-                    class_prop += "static readonly " + cell_key + ":" + base_type + "=" + str(cell_value) + ";\n"
-                else:
-                    class_prop += "static readonly " + cell_key + ":" + base_type + "= '" + str(cell_value) + "';\n"
-                pass
-
-            return ts_define, class_prop
+            return self.get_ts_struct_define_of_key_value()
 
         raise TypeError("不存在的表键值类型：" + self.key_column_type)
 
@@ -349,8 +391,12 @@ class Sheet:
 
 
 class Workbook:
-    name = ""
-    sheets: List[Sheet] = []
+
+    def __init__(self):
+        # 工作簿的英文名，会作为导出ts类定义的类名、ts文件名
+        self.name = ""
+        self.sheets: List[Sheet] = []
+        pass
 
     def print_sheets_names(self):
         print("Workbook.print_sheets_names")
@@ -364,10 +410,6 @@ class Workbook:
     def get_ts_struct_define(self):
         interface_define = ""
         book_define = "export class " + self.name + "{\n"
-        # if len(self.sheets) == 1:
-        #     ts_define, class_prop = self.sheets[0].get_ts_struct_define()
-        #     return
-
         for sheet in self.sheets:
             ts_define, class_prop = sheet.get_ts_struct_define()
             book_define += class_prop
@@ -377,6 +419,14 @@ class Workbook:
         book_define += "}\n"
         book_define += interface_define
         return book_define
+
+    def check_workbook_class_name_diff_from_every_sheet_name(self):
+        # if len(self.sheets) == 1:
+        #     return
+        for sheet in self.sheets:
+            print(self.name, sheet.name)
+            if self.name == sheet.name:
+                raise TypeError("excel工作簿配置的英文名与表名冲突，请修改其中一个！")
 
 
 # 检测工作簿英文名、表名、列名是否符合变量的定义规范
