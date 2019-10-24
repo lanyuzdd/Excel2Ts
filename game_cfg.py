@@ -116,7 +116,7 @@ def load_excel_file(table_item_cfg):
 
     ts_define = workbook.get_ts_struct_define()
 
-    tmp_ts_path = os.path.join(sys.path[0],'assets',workbook.name+'.ts')
+    tmp_ts_path = os.path.join(sys.path[0], 'assets', 'ts_class', workbook.name + '.ts')
     with open(tmp_ts_path, 'w', encoding='utf-8') as ts_file:
         ts_file.write(ts_define)
         ts_file.close()
@@ -229,35 +229,6 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data, workbook: workbook_data.W
         pass
 
     print('所有行数据读取完毕')
-
-    # return
-
-    # 所有行数据读取完毕，再组织
-    if wb_sheet.key_column_type == workbook_data.ColumnSpecifier.no_key:
-        # 没有键值对
-        # sheet_json_data['type'] = 'list'
-        # sheet_lua_data['type'] = 'list'
-        # for row_json_data_item in row_json_data_list:
-        #     sheet_json_data['list'].append(row_json_data_item)
-        #
-        # for row_lua_data_item in row_lua_data_list:
-        #     sheet_lua_data['list'].append(row_lua_data_item)
-        pass
-    elif wb_sheet.key_column_type == workbook_data.ColumnSpecifier.key_value_key:
-        # # 纯键值对
-        # sheet_json_data['type'] = 'map'
-        # sheet_lua_data['type'] = 'map'
-        #
-        # print('纯键值对')
-        #
-        # for row_lua_data_item in row_lua_data_list:
-        #     sheet_json_data['map'][row_lua_data_item[0]] = row_lua_data_item[1]
-        #     sheet_lua_data['map'][row_lua_data_item[0]] = row_lua_data_item[1]
-        pass
-    else:
-        # restructure_sheet_json_original_data_with_key(sheet_json_data, row_json_data_list, column_names, key_column_idx)
-        # restructure_sheet_lua_original_data_with_key(sheet_lua_data, row_lua_data_list, column_names, key_column_idx)
-        pass
     pass
 
 

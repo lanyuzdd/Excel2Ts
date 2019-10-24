@@ -5,4 +5,4 @@
 *.pyc
 /static/
 /.mypy_cache
-/assets/student_lession.ts
+/assets/ts_class

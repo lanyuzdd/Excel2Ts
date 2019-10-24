@@ -166,7 +166,11 @@ class Sheet:
                 pass
             ts_define += "}\n"
 
-            class_prop = self.name + "_items_map :{[key:string]:Array<" + self.name + ">};\n"
+            if self.key_column_type == ColumnSpecifier.primary_key:
+                class_prop = self.name + "_items_map :{[key:string]:" + self.name + "};\n"
+            else:
+                class_prop = self.name + "_items_map :{[key:string]:Array<" + self.name + ">};\n"
+
             return ts_define, class_prop
 
         if self.key_column_type == ColumnSpecifier.key_value_key:
@@ -356,13 +360,14 @@ class Workbook:
             print(len(item.column_type_list))
         pass
 
+    # 工作簿数据结构转ts类
     # 工作簿读取所有表数据后，执行此方法
     def get_ts_struct_define(self):
         interface_define = ""
         book_define = "export class "+self.name+"{\n"
-        if len(self.sheets) == 1:
-            ts_define, class_prop = self.sheets[0].get_ts_struct_define()
-            return
+        # if len(self.sheets) == 1:
+        #     ts_define, class_prop = self.sheets[0].get_ts_struct_define()
+        #     return
 
         for sheet in self.sheets:
             ts_define, class_prop = sheet.get_ts_struct_define()
