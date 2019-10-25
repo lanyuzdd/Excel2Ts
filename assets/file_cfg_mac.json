@@ -121,7 +121,7 @@
     {
       "excel_name": "学生选课表lession.xlsx",
       "excel_sub_dir": "test",
-      "export_name": "lession_table"
+      "export_name": "lession"
     }
   ]
 }

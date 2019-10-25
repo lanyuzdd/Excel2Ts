@@ -24,6 +24,7 @@ class ColumnBaseValue:
     type_string: str = "string"
     type_number: str = "number"
     type_comment: str = "comment"
+    type_list: str = "list"
 
 
 class ColumnSpecifier:
@@ -33,18 +34,7 @@ class ColumnSpecifier:
     key_value_value: str = "key_value_value"
     # 无键值对
     no_key = 'no_key'
-    # list = "list"
 
-
-# class StructType:
-#     # 纯键值对列转成静态属性常量
-#     static_prop: str = "static_prop"
-#     # 无键的表转成列表
-#     member_prop_list: str = "member_prop_list"
-#     # 带键的表转成字典
-#     member_prop_map_list: str = "member_prop_map_list"
-#
-#
 
 class SheetColumn:
     # 列名
@@ -69,11 +59,13 @@ class SheetColumn:
     # 列检验值是否符合定义;值符合定义，将值转成正确的数据类型返回
     def validate_cell_value_by_column_type(self, cell_value, row_idx: int):
         # todo 检测空单元格
-        if cell_value == '' or cell_value is None:
-            raise TypeError("检测到空单元格 列：" + self.name + " 行数：" + row_idx)
+        if (cell_value == '' or cell_value is None) and self.base_type != ColumnBaseValue.type_comment:
+            msg = "检测到空单元格 列：" + self.name + " 行数：" + str(row_idx)
+            print(msg)
+            raise TypeError(msg)
 
         # 有可能是<class 'float'>，转成字符串
-        cell_value = str(cell_value)
+        cell_value_str = str(cell_value)
         # 值符合定义，将值转成正确的数据类型
         # 检测数字单元格
         if self.base_type == ColumnBaseValue.type_number:
@@ -81,16 +73,22 @@ class SheetColumn:
             # print(reg_int)
             # print(cell_value)
             # print(type(cell_value))
-            if re.match(reg_int, cell_value):
+            if re.match(reg_int, cell_value_str):
                 cell_value = int(cell_value)
+                print(cell_value_str + ' 转int ' + str(cell_value))
                 return cell_value
-            if re.match(reg_float, cell_value):
-                cell_value = float(cell_value)
+            if re.match(reg_float, cell_value_str):
+                if int(cell_value) - cell_value == 0:
+                    cell_value = int(cell_value)
+                    print(cell_value_str + ' 转int ' + str(cell_value))
+                else:
+                    cell_value = float(cell_value)
+                    print(cell_value_str + ' 转float ' + str(cell_value))
+
                 return cell_value
             else:
                 raise TypeError("值不是数字 列：" + self.name + " 行数：" + row_idx)
 
-        cell_value = cell_value + ''
         return cell_value
 
 
@@ -148,7 +146,7 @@ class Sheet:
             pass
         ts_define += "}\n"
 
-        class_prop = self.name + "_items :Array<" + self.name + ">;\n"
+        class_prop = self.name + " :Array<" + self.name + ">;\n"
         return ts_define, class_prop
 
     # primary_key key表的ts定义
@@ -175,9 +173,9 @@ class Sheet:
         ts_define += "}\n"
 
         if self.key_column_type == ColumnSpecifier.primary_key:
-            class_prop = self.name + "_items_map :{[key:string]:" + self.name + "};\n"
+            class_prop = self.name + " :{[key:string]:" + self.name + "};\n"
         else:
-            class_prop = self.name + "_items_map :{[key:string]:Array<" + self.name + ">};\n"
+            class_prop = self.name + " :{[key:string]:Array<" + self.name + ">};\n"
 
         return ts_define, class_prop
 
@@ -198,9 +196,9 @@ class Sheet:
         ts_type = get_ts_type_by_col_base_value_type(value_col_base_type)
 
         if self.key_column_type == ColumnSpecifier.primary_key:
-            class_prop = self.name + "_items_map :{[key:string]:" + ts_type + "};\n"
+            class_prop = self.name + " :{[key:string]:" + ts_type + "};\n"
         else:
-            class_prop = self.name + "_items_map :{[key:string]:Array<" + ts_type + ">};\n"
+            class_prop = self.name + " :{[key:string]:Array<" + ts_type + ">};\n"
 
         return ts_define, class_prop
 
@@ -227,9 +225,9 @@ class Sheet:
             if str_is_int(cell_value) or str_is_float(cell_value):
                 base_type = "number"
             if base_type == "number":
-                class_prop += "static readonly " + cell_key + ":" + base_type + "=" + str(cell_value) + ";\n"
+                class_prop += "export const " + cell_key + ":" + base_type + "=" + str(cell_value) + ";\n"
             else:
-                class_prop += "static readonly " + cell_key + ":" + base_type + "= '" + str(cell_value) + "';\n"
+                class_prop += "export const " + cell_key + ":" + base_type + "= '" + str(cell_value) + "';\n"
             pass
 
         return ts_define, class_prop
@@ -389,6 +387,146 @@ class Sheet:
                     if column.sheet_index > self.column_type_list[i].sheet_index:
                         column.value_index = column.value_index - 1
 
+    def to_json(self):
+
+        if self.key_column_type == ColumnSpecifier.no_key:
+            return self.get_json_of_no_key()
+
+        if self.key_column_type == ColumnSpecifier.primary_key or self.key_column_type == ColumnSpecifier.key:
+            return self.get_json_of_key()
+
+        if self.key_column_type == ColumnSpecifier.key_value_key:
+            pure_key_value_data = self.get_json_of_key_value()
+            return pure_key_value_data, pure_key_value_data
+
+        raise TypeError("不存在的表键值类型：" + self.key_column_type)
+
+        pass
+
+    def get_json_of_no_key(self):
+        json_list = []
+        map_list = []
+        # 无键的表转成列表
+        for row_origin_data in self.origin_value_rows:
+            row_data = []
+            row_map_data = {}
+            for i in range(0, len(self.value_type_columns)):
+                cell_value = self.value_type_columns[i].sheet_index
+                row_data.append(cell_value)
+
+                row_map_data[self.value_type_columns[i].name] = cell_value
+                pass
+            json_list.append(row_data)
+            map_list.append(row_map_data)
+            pass
+        return json_list, map_list
+
+    def get_json_of_key(self):
+
+        is_key_type_sheet = self.key_column_type == ColumnSpecifier.primary_key or self.key_column_type == ColumnSpecifier.key
+        if not is_key_type_sheet:
+            raise TypeError("不是键值列，primary_key or key")
+
+        if len(self.value_type_columns) == 2:
+            json_map = self.get_json_of_key_with_one_value_cols()
+            json_list_map = json_map
+        else:
+            json_list_map, json_map = self.get_json_of_key_with_multi_value_cols()
+
+        return json_list_map, json_map
+
+    def get_json_of_key_with_one_value_cols(self):
+        # 带键的表转成字典
+        json_map = {}
+        value_col_idx = -1
+        for col in self.value_type_columns:
+            if col.sheet_index != self.key_column_idx:
+                value_col_idx = col.sheet_index
+
+        if value_col_idx == -1:
+            raise TypeError("没有找到值列")
+
+        for row_origin_data in self.origin_value_rows:
+            # for i in range(0, len(self.value_type_columns)):
+            key_value = row_origin_data[self.key_column_idx]
+            print(row_origin_data)
+            value = row_origin_data[value_col_idx]
+            if self.key_column_type == ColumnSpecifier.primary_key:
+                json_map[key_value] = value
+            else:
+                if key_value in json_map.keys():
+                    pass
+                else:
+                    json_map[key_value] = []
+                    pass
+                json_map[key_value].append(value)
+            pass
+
+        return json_map
+
+    def get_json_of_key_with_multi_value_cols(self):
+        # 带键的表转成字典
+        json_list_map = {}
+        json_map = {}
+
+        for row_origin_data in self.origin_value_rows:
+            row_data = []
+            row_map_data = {}
+            key_value = row_origin_data[self.key_column_idx]
+            for i in range(0, len(self.value_type_columns)):
+                value_col = self.value_type_columns[i]
+                if value_col.sheet_index == self.key_column_idx:
+                    continue
+                cell_value = row_origin_data[value_col.sheet_index]
+                row_data.append(cell_value)
+                row_map_data[value_col.name] = cell_value
+                pass
+            if self.key_column_type == ColumnSpecifier.primary_key:
+                json_list_map[key_value] = row_data
+                json_map[key_value] = row_map_data
+            else:
+                if key_value in json_list_map.keys():
+                    pass
+                else:
+                    json_list_map[key_value] = []
+                    pass
+                if key_value in json_map.keys():
+                    pass
+                else:
+                    json_map[key_value] = []
+                    pass
+                pass
+                json_list_map[key_value].append(row_data)
+                print("json_map[key_value]")
+                print(json_map[key_value])
+                json_map[key_value].append(row_map_data)
+            pass
+
+        return json_list_map, json_map
+        # enf of get_json_of_key_with_multi_value_cols
+        pass
+
+    def get_json_of_key_value(self):
+        # 纯键值对列转成静态属性常量
+        json_map = {}
+        value_col_idx = -1
+        for col in self.value_type_columns:
+            if col.sheet_index != self.key_column_idx:
+                value_col_idx = col.sheet_index
+
+        if value_col_idx == -1:
+            raise TypeError("不是纯键值对表")
+
+        key_col = self.column_type_list[self.key_column_idx]
+        value_col = self.value_type_columns[value_col_idx]
+        for row_value in self.origin_value_rows:
+            cell_value = row_value[value_col.sheet_index]
+            cell_key = row_value[key_col.sheet_index]
+
+            json_map[cell_key] = cell_value
+
+        return json_map
+
 
 class Workbook:
 
@@ -407,26 +545,60 @@ class Workbook:
 
     # 工作簿数据结构转ts类
     # 工作簿读取所有表数据后，执行此方法
-    def get_ts_struct_define(self):
-        interface_define = ""
-        book_define = "export class " + self.name + "{\n"
+    def get_ts_struct_define(self, map_json):
+        # namespace的常量，保存纯键值对导出的常量
+        const_define = ''
+        sheet_interface = ''
+
+        namespace_define = "export namespace  " + self.name + "_ns {\n"
+
+        # 工作簿interface，主类
+        book_define = "export interface  " + self.name + " {\n"
+
         for sheet in self.sheets:
             ts_define, class_prop = sheet.get_ts_struct_define()
-            book_define += class_prop
-            interface_define += ts_define
+            if sheet.key_column_type == ColumnSpecifier.key_value_key:
+                const_define += class_prop
+            else:
+                book_define += class_prop
+            sheet_interface += ts_define
             pass
 
         book_define += "}\n"
-        book_define += interface_define
-        return book_define
+
+        namespace_define += const_define
+        namespace_define += book_define
+        namespace_define += sheet_interface
+
+        namespace_define += 'export const json_data:any = ' + json.dumps(map_json, sort_keys=True, indent=4,
+                                                                         separators=(',', ':'),
+                                                                         ensure_ascii=False) + ";\n"
+        namespace_define += 'export const instance: ' + self.name + ' = json_data;\n'
+
+        namespace_define += "}\n"
+
+        return namespace_define
 
     def check_workbook_class_name_diff_from_every_sheet_name(self):
-        # if len(self.sheets) == 1:
-        #     return
+        if len(self.sheets) == 1:
+            return
         for sheet in self.sheets:
             print(self.name, sheet.name)
             if self.name == sheet.name:
                 raise TypeError("excel工作簿配置的英文名与表名冲突，请修改其中一个！")
+
+    def to_json(self):
+        if len(self.sheets) == 0:
+            list_json, map_json = self.sheets[0].to_json()
+            return list_json, map_json
+        list_json = {}
+        map_json = {}
+        for sheet in self.sheets:
+            sheet_list_data, sheet_map_data = sheet.to_json()
+            list_json[sheet.name] = sheet_list_data
+            map_json[sheet.name] = sheet_map_data
+            pass
+        return list_json, map_json
 
 
 # 检测工作簿英文名、表名、列名是否符合变量的定义规范

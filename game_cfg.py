@@ -29,7 +29,7 @@ cur_sheet_column_names = None
 #               'test_un_primary_key2columns.xlsx']
 
 # 要导出的工作簿文件名
-output_tables = ['学生选课表lession.xlsx']
+output_tables = ['学生选课表.xlsx']
 
 
 # 加载配置文件，说明excel路径、导出文件路径
@@ -114,15 +114,28 @@ def load_excel_file(table_item_cfg):
         read_sheet(sheet, book_json_sheet_data[sheet.name], book_lua_sheet_data[sheet.name], workbook)
         pass
 
+    list_json, map_json = workbook.to_json()
+
     workbook.check_workbook_class_name_diff_from_every_sheet_name()
-    ts_define = workbook.get_ts_struct_define()
+    ts_define = workbook.get_ts_struct_define(map_json)
 
     tmp_ts_path = os.path.join(sys.path[0], 'assets', 'ts_class', workbook.name + '.ts')
     with open(tmp_ts_path, 'w', encoding='utf-8') as ts_file:
         ts_file.write(ts_define)
         ts_file.close()
 
-    return
+    # list_json, map_json = workbook.to_json()
+    # json_path = os.path.join(sys.path[0], 'assets', 'ts_class', workbook.name + '_list.json')
+    # with open(json_path, 'w', encoding='utf-8') as book_json_sheet_data_file:
+    #     json.dump(list_json, fp=book_json_sheet_data_file, sort_keys=True, indent=4,
+    #               separators=(',', ':'), ensure_ascii=False)
+    #     book_json_sheet_data_file.close()
+
+    # json_path = os.path.join(sys.path[0], 'assets', 'ts_class', workbook.name + '.json')
+    # with open(json_path, 'w', encoding='utf-8') as book_json_sheet_data_file:
+    #     json.dump(map_json, fp=book_json_sheet_data_file, sort_keys=True, indent=4,
+    #               separators=(',', ':'), ensure_ascii=False)
+    #     book_json_sheet_data_file.close()
 
     # wb.close()
 
@@ -191,36 +204,42 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data, workbook: workbook_data.W
 
     workbook.print_sheets_names()
 
-    # return
-
     # 二维数组，excel读取的原始行列数据
+
+    define_col_num = len(wb_sheet.column_type_list)
 
     for row_idx in range(4, row_num + 1):
         # 读取一行
-        row_data = sheet.range('A' + str(row_idx)).expand('right').value
-        print("row_data origin")
-        print(row_data)
+        right_cell = chr(ord('A') + len(wb_sheet.column_type_list))
+        # print("right_cell char " + right_cell)
+        # print(right_cell + str(row_idx))
+
+        # row_data = sheet.range('A' + str(row_idx)).expand('right').value
+        # row_data = sheet.range('A', right_cell + str(row_idx)).value
+        range_str = 'A' + str(row_idx) + ':' + right_cell + str(row_idx)
+        # print("range_str", range_str)
+        row_data = sheet.range(range_str).value
+
+        # print("row_data origin")
+        # print(row_data)
+
+        # 当前行的实际长度
+        cur_row_col_num = len(row_data)
 
         # 数组,原始格式,包括注释列
         row_cell_values = []
 
-        for column_idx in range(0, col_num):
-            # 忽略空单元格
-            if len(row_data) <= column_idx:
-                break
-
-            # 忽略注释单元格
-            column_name = column_names[column_idx]
-            # if column_name[0:7] == 'comment':
-            #     continue
-
+        for column_idx in range(0, define_col_num):
             print('column_idx:', column_idx)
-            cell_value = row_data[column_idx]
+            if column_idx >= cur_row_col_num:
+                cell_value = None
+            else:
+                cell_value = row_data[column_idx]
 
             column = wb_sheet.column_type_list[column_idx]
-            value = column.validate_cell_value_by_column_type(cell_value, row_idx)
+            formated_value = column.validate_cell_value_by_column_type(cell_value, row_idx)
 
-            row_cell_values.append(cell_value)
+            row_cell_values.append(formated_value)
             pass
 
         wb_sheet.origin_value_rows.append(row_cell_values)

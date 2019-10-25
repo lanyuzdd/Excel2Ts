@@ -20,3 +20,9 @@ print(color2arbg(0xBCA98E))
 
 str01 = '0000000000000000000000000000000000000000000001111111111111111000000000000000000000000000000000'
 # print(len(str01))
+
+json_data = {}
+print('haha' in json_data.keys())
+json_data['haha'] = "hehe"
+print('haha' in json_data.keys())
+
