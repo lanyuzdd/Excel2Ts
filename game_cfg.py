@@ -2,7 +2,6 @@ import xlwings
 import os
 import sys
 import json
-import re
 import json2lua
 import platform
 import workbook_data
@@ -12,10 +11,6 @@ file_cfg = None
 
 cur_book_name = None
 cur_sheet_name = None
-# 当前表格的类型列表
-cur_sheet_type_col = None
-
-cur_sheet_column_names = None
 
 # 为了方便复制
 # all_tables = ['VIP等级表.xlsx', 'VIP等级特权文字.xlsx', 'VIP系统.xlsx', 'VIP等级奖励', '首充.xlsx',
@@ -91,8 +86,6 @@ def load_excel_file(table_item_cfg):
     wb = xlwings.Book(excel_path)
     sheets = wb.sheets
     # print(len(sheets))
-    book_json_sheet_data = {}
-    book_lua_sheet_data = {}
     workbook = workbook_data.Workbook()
     workbook.name = cur_book_name
     for i in range(0, len(sheets)):
@@ -109,9 +102,7 @@ def load_excel_file(table_item_cfg):
 
         # print('read', sheet.name)
 
-        book_json_sheet_data[sheet.name] = get_sheet_data_template()
-        book_lua_sheet_data[sheet.name] = get_sheet_data_template()
-        read_sheet(sheet, book_json_sheet_data[sheet.name], book_lua_sheet_data[sheet.name], workbook)
+        read_sheet(sheet, workbook)
         pass
 
     list_json, map_json = workbook.to_json()
@@ -137,19 +128,12 @@ def load_excel_file(table_item_cfg):
     #               separators=(',', ':'), ensure_ascii=False)
     #     book_json_sheet_data_file.close()
 
-    # wb.close()
+    wb.close()
 
     # sheet数据去掉map list type结构
 
     # todo
-    # simplified_book_json_data = remove_book_sheet_map_list_type_wrap_and_one_sheet_wrap(book_json_sheet_data)
-    # simplified_book_lua_data = remove_book_sheet_map_list_type_wrap_and_one_sheet_wrap(book_lua_sheet_data)
-
-    # todo
     # write_book_data(simplified_book_json_data, simplified_book_lua_data, table_item_cfg)
-
-    # print(json.dumps(simplified_book_json_data))
-    # print(json.dumps(simplified_book_lua_data))
 
     # 没用
     # xlwings.App.kill()
@@ -169,7 +153,7 @@ def get_sheet_data_template():
 # sheet excel sheet对象
 # sheet_json_data json的表结构
 # sheet_lua_data lua的表结构
-def read_sheet(sheet, sheet_json_data, sheet_lua_data, workbook: workbook_data.Workbook):
+def read_sheet(sheet, workbook: workbook_data.Workbook):
     print("读取表:" + sheet.name)
     global cur_sheet_name
     cur_sheet_name = sheet.name
@@ -237,9 +221,9 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data, workbook: workbook_data.W
                 cell_value = row_data[column_idx]
 
             column = wb_sheet.column_type_list[column_idx]
-            formated_value = column.validate_cell_value_by_column_type(cell_value, row_idx)
+            formatted_value = column.validate_cell_value_by_column_type(cell_value, row_idx)
 
-            row_cell_values.append(formated_value)
+            row_cell_values.append(formatted_value)
             pass
 
         wb_sheet.origin_value_rows.append(row_cell_values)
@@ -250,91 +234,6 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data, workbook: workbook_data.W
 
     print('所有行数据读取完毕')
     pass
-
-
-# 表所有行数据读取完毕后，按列定义的结构重新组织整表数据结构
-def restructure_sheet_json_original_data_with_key(sheet_json_data, row_json_data_list, column_names, key_column_idx):
-    sheet_json_data['type'] = 'map'
-
-    for row_json_data_item in row_json_data_list:
-        # 表键列名
-        key_column_name = column_names[key_column_idx]
-        print(key_column_name, json.dumps(row_json_data_item))
-        # 拿到行数据中的键值
-        key_name = row_json_data_item[key_column_name]
-        # print(key_name)
-        # 删除行数据的键值
-        row_json_data_item.pop(key_column_name)
-        print('row_json_data_item removed key', json.dumps(row_json_data_item))
-        if sheet_json_data['primary_key']:
-            if key_name in sheet_json_data['map']:
-                raise Exception('primary_key重复!')
-            else:
-                sheet_json_data['map'][key_name] = row_json_data_item
-            pass
-        elif sheet_json_data['un_primary_key2columns']:
-            if len(row_json_data_item) >= 2:
-                raise Exception('un_primary_key2columns判断错误，列数超过3！')
-
-            if key_name not in sheet_json_data['map']:
-                sheet_json_data['map'][key_name] = []
-            for item_key, item_value in row_json_data_item.items():
-                sheet_json_data['map'][key_name].append(item_value)
-
-            pass
-        else:
-            if key_name not in sheet_json_data['map']:
-                sheet_json_data['map'][key_name] = []
-            sheet_json_data['map'][key_name].append(row_json_data_item)
-        pass
-    pass
-
-
-def restructure_sheet_lua_original_data_with_key(sheet_lua_data, row_lua_data_list, column_names, key_column_idx):
-    sheet_lua_data['type'] = 'map'
-
-    for row_lua_data_item in row_lua_data_list:
-        key_name = row_lua_data_item[key_column_idx]
-        row_lua_data_item.pop(key_column_idx)
-
-        if sheet_lua_data['primary_key']:
-            if key_name in sheet_lua_data['map']:
-                raise Exception('primary_key重复!')
-            else:
-                sheet_lua_data['map'][key_name] = row_lua_data_item
-            print('restructure_sheet_lua_original_data_with_key primary_key')
-            pass
-        elif sheet_lua_data['un_primary_key2columns']:
-            if len(row_lua_data_item) > 2:
-                raise Exception('un_primary_key2columns判断错误，列数超过2！')
-
-            if key_name not in sheet_lua_data['map']:
-                sheet_lua_data['map'][key_name] = []
-            sheet_lua_data['map'][key_name].append(row_lua_data_item[0])
-            print('restructure_sheet_lua_original_data_with_key un_primary_key2columns')
-
-            pass
-        else:
-            if key_name not in sheet_lua_data['map']:
-                sheet_lua_data['map'][key_name] = []
-
-            sheet_lua_data['map'][key_name].append(row_lua_data_item)
-            print('restructure_sheet_lua_original_data_with_key common')
-
-        pass
-    pass
-
-
-# todo
-def validate_cell_value(value, value_type, column_index):
-    res = True
-
-    if value_type == 'number':
-        match = re.match(r'^[-+]?[0-9]+\.[0-9]+$', str(value))
-        res = match is not None
-        return res
-
-    return res
 
 
 def write_book_data(book_json_sheet_data, book_lua_sheet_data, table_item_cfg):
@@ -370,17 +269,6 @@ def write_book_data(book_json_sheet_data, book_lua_sheet_data, table_item_cfg):
     #     lua_file.write(content)
     #     lua_file.close()
 
-    write_book_data_d_ts(book_json_sheet_data, table_item_cfg)
-
-    pass
-
-
-def write_book_data_d_ts(book_json_sheet_data, table_item_cfg):
-    pass
-
-
-# 验证主键列的所有值是否唯一
-def validate_primary_key_column(sheet, column_idx):
     pass
 
 

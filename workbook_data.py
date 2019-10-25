@@ -94,6 +94,8 @@ class SheetColumn:
 
 class Sheet:
 
+    # todo 验证主键列的所有值是否唯一
+
     def __init__(self, name: str, column_names: List[str], column_types: List[str], column_comments: List[str]):
         # 表名
         self.name = name
