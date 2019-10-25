@@ -372,10 +372,10 @@ class Sheet:
 
     # 表格非注释列
     def group_column_by_comment(self):
-        print(ColumnBaseValue.type_comment)
-        print(type(ColumnBaseValue.type_comment))
+        # print(ColumnBaseValue.type_comment)
+        # print(type(ColumnBaseValue.type_comment))
         for column in self.column_type_list:
-            print(column.base_type, ColumnBaseValue.type_comment)
+            # print(column.base_type, ColumnBaseValue.type_comment)
             if column.base_type != ColumnBaseValue.type_comment:
                 self.value_type_columns.append(column)
             else:
@@ -411,7 +411,7 @@ class Sheet:
             row_data = []
             row_map_data = {}
             for i in range(0, len(self.value_type_columns)):
-                cell_value = self.value_type_columns[i].sheet_index
+                cell_value = row_origin_data[self.value_type_columns[i].sheet_index]
                 row_data.append(cell_value)
 
                 row_map_data[self.value_type_columns[i].name] = cell_value
@@ -539,8 +539,8 @@ class Workbook:
     def print_sheets_names(self):
         print("Workbook.print_sheets_names")
         for item in self.sheets:
-            print(item.name)
-            print(len(item.column_type_list))
+            print("表名：" + item.name)
+            print("列数：", len(item.column_type_list))
         pass
 
     # 工作簿数据结构转ts类

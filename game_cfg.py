@@ -99,7 +99,7 @@ def load_excel_file(table_item_cfg):
         sheet = sheets[i]
         # print(sheet.name) #Sheet1
         a1_value = sheet.range('A1').value
-        print(sheet.name, 'a1', a1_value)
+        # print(sheet.name, 'a1', a1_value)
         if a1_value is None:
             continue
 
@@ -230,7 +230,7 @@ def read_sheet(sheet, sheet_json_data, sheet_lua_data, workbook: workbook_data.W
         row_cell_values = []
 
         for column_idx in range(0, define_col_num):
-            print('column_idx:', column_idx)
+            # print('column_idx:', column_idx)
             if column_idx >= cur_row_col_num:
                 cell_value = None
             else:
@@ -262,7 +262,7 @@ def restructure_sheet_json_original_data_with_key(sheet_json_data, row_json_data
         print(key_column_name, json.dumps(row_json_data_item))
         # 拿到行数据中的键值
         key_name = row_json_data_item[key_column_name]
-        print(key_name)
+        # print(key_name)
         # 删除行数据的键值
         row_json_data_item.pop(key_column_name)
         print('row_json_data_item removed key', json.dumps(row_json_data_item))
@@ -382,26 +382,6 @@ def write_book_data_d_ts(book_json_sheet_data, table_item_cfg):
 # 验证主键列的所有值是否唯一
 def validate_primary_key_column(sheet, column_idx):
     pass
-
-
-def format_book_sheet_data(book_sheet_data):
-    pass
-
-
-def remove_book_sheet_map_list_type_wrap_and_one_sheet_wrap(book_sheet_data):
-    simplified_book_data = {}
-    for sheet_name, sheet_data in book_sheet_data.items():
-        if sheet_data['type'] == 'list':
-            if len(book_sheet_data) == 1:
-                simplified_book_data = sheet_data['list']
-            else:
-                simplified_book_data[sheet_name] = sheet_data['list']
-        else:
-            if len(book_sheet_data) == 1:
-                simplified_book_data = sheet_data['map']
-            else:
-                simplified_book_data[sheet_name] = sheet_data['map']
-    return simplified_book_data
 
 
 load_file_cfg()
