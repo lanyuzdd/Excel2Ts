@@ -11,20 +11,13 @@ file_cfg = None
 
 cur_book_name = None
 cur_sheet_name = None
+# 当前表格的类型列表
+cur_sheet_type_col = None
 
-# 为了方便复制
-# all_tables = ['VIP等级表.xlsx', 'VIP等级特权文字.xlsx', 'VIP系统.xlsx', 'VIP等级奖励', '首充.xlsx',
-#               '锻造系统.xlsx', '装备通用.xlsx', '锻造宝石.xlsx',
-#               '材料副本.xlsx', '材料副本地图.xlsx',
-#               "世界boss.xlsx", '通天塔.xlsx', '世界boss奖励展示.xlsx',
-#               '快速获得.xlsx', '快速获得商品.xlsx',
-#               '日常活跃.xlsx', '日常活跃任务名索引.xlsx',
-#               'test_key.xlsx',
-#               'test_key_value.xlsx','学生选课表.xlsx'，'学生选课表key.xlsx','学生选课表lession.xlsx',
-#               'test_un_primary_key2columns.xlsx']
+cur_sheet_column_names = None
 
 # 要导出的工作簿文件名
-output_tables = ['学生选课表.xlsx']
+output_tables = []
 
 
 # 加载配置文件，说明excel路径、导出文件路径
@@ -37,22 +30,26 @@ def load_file_cfg():
     file_cfg_path = os.path.join(sys.path[0], 'assets', 'file_cfg.json')
 
     if sys_name == 'Darwin':
-        file_cfg_path = os.path.join(sys.path[0], 'assets', 'file_cfg_mac.json')
+        file_cfg_path = os.path.join(
+            sys.path[0], 'assets', 'file_cfg_mac.json')
 
     with open(file_cfg_path, 'r', encoding='utf-8') as file:
         file_cfg = json.load(file)
 
-    export_path = file_cfg['export_path']
-    if not os.path.exists(export_path):
-        print("file_cfg.json配置错误，export_path文件不存在！")
-        sys.exit(3)
+    global output_tables
+    output_tables = file_cfg['export_tables']
 
     for table_item in file_cfg['tables']:
         if not table_item['excel_name'] in output_tables:
             continue
 
-        table_item['path'] = os.path.join(file_cfg["excel_root_path"], table_item['excel_sub_dir'],
-                                          table_item['excel_name'])
+        export_path = table_item['export_path']
+        if not os.path.exists(export_path):
+            print("file_cfg.json配置错误，export_path文件不存在！"+export_path)
+            sys.exit(3)
+
+        table_item['path'] = os.path.join(
+            table_item["excel_path"], table_item['excel_name'])
         print(table_item['path'])
         if not os.path.exists(table_item['path']):
             print('file_cfg.json配置错误，找不到文件:' + table_item['path'])
@@ -63,14 +60,22 @@ def load_file_cfg():
 
 # 加载要导出的excel表文件列表
 def load_excel_files():
+    tables = []
     for table_item in file_cfg['tables']:
         if not table_item['excel_name'] in output_tables:
             continue
+        tables.append(table_item)
+    if len(tables) == 0:
+        print("请在file_cfg.json配置export_tables要转换的excel文件！")
+        sys.exit(3)
+    for table_item in tables:
         load_excel_file(table_item)
     pass
 
 
 # 加载要导出的excel表文件
+# table_item_cfg file_cfg.json的table_item
+# table_item_cfg.path=table_item_cfg.excel_path+table_item_cfg.excel_name
 def load_excel_file(table_item_cfg):
     print("加载工作簿：" + table_item_cfg['excel_name'])
 
@@ -110,29 +115,18 @@ def load_excel_file(table_item_cfg):
     workbook.check_workbook_class_name_diff_from_every_sheet_name()
     ts_define = workbook.get_ts_struct_define(map_json)
 
-    tmp_ts_path = os.path.join(sys.path[0], 'assets', 'ts_class', workbook.name + '.ts')
+    # 工程目录，测试用
+    tmp_ts_path = os.path.join(
+        sys.path[0], 'assets', 'ts_class', workbook.name + '.ts')
+    # 读取file_cfg.json配置的发布目录
+    tmp_ts_path = os.path.join(
+        table_item_cfg['export_path'], workbook.name + '.ts')
     with open(tmp_ts_path, 'w', encoding='utf-8') as ts_file:
         ts_file.write(ts_define)
         ts_file.close()
 
-    # list_json, map_json = workbook.to_json()
-    # json_path = os.path.join(sys.path[0], 'assets', 'ts_class', workbook.name + '_list.json')
-    # with open(json_path, 'w', encoding='utf-8') as book_json_sheet_data_file:
-    #     json.dump(list_json, fp=book_json_sheet_data_file, sort_keys=True, indent=4,
-    #               separators=(',', ':'), ensure_ascii=False)
-    #     book_json_sheet_data_file.close()
+    # wb.close()
 
-    # json_path = os.path.join(sys.path[0], 'assets', 'ts_class', workbook.name + '.json')
-    # with open(json_path, 'w', encoding='utf-8') as book_json_sheet_data_file:
-    #     json.dump(map_json, fp=book_json_sheet_data_file, sort_keys=True, indent=4,
-    #               separators=(',', ':'), ensure_ascii=False)
-    #     book_json_sheet_data_file.close()
-
-    wb.close()
-
-    # sheet数据去掉map list type结构
-
-    # todo
     # write_book_data(simplified_book_json_data, simplified_book_lua_data, table_item_cfg)
 
     # 没用
@@ -145,7 +139,8 @@ def get_sheet_data_template():
     # primary_key 表含有主键
     # un_primary_key2columns 表不含有主键，共两列值
     # 以上两种情况要去掉值列外面的list封装[]
-    temp = {'map': {}, 'list': [], 'type': '', 'primary_key': False, 'un_primary_key2columns': False}
+    temp = {'map': {}, 'list': [], 'type': '',
+            'primary_key': False, 'un_primary_key2columns': False}
     return temp
 
 
@@ -180,7 +175,8 @@ def read_sheet(sheet, workbook: workbook_data.Workbook):
     column_comments = sheet.range('A3').expand('right').value
 
     # try:
-    wb_sheet = workbook_data.Sheet(cur_sheet_name, column_names, column_types, column_comments)
+    wb_sheet = workbook_data.Sheet(
+        cur_sheet_name, column_names, column_types, column_comments)
     # except TypeError as te:
     #     print(str(te.args))
     #     sys.exit(3)
@@ -221,7 +217,8 @@ def read_sheet(sheet, workbook: workbook_data.Workbook):
                 cell_value = row_data[column_idx]
 
             column = wb_sheet.column_type_list[column_idx]
-            formatted_value = column.validate_cell_value_by_column_type(cell_value, row_idx)
+            formatted_value = column.validate_cell_value_by_column_type(
+                cell_value, row_idx)
 
             row_cell_values.append(formatted_value)
             pass

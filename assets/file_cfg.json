@@ -1,24 +1,12 @@
 {
   "info": "游戏配置excel转ts",
-  "export_tables":["学生选课表.xlsx","找茬魔方墙配置表.xlsx"],
+  "export_tables":["学生选课表.xlsx"],
   "tables": [
     {
       "excel_path": "D:\\workspace\\pyws\\GameCfg\\assets\\excel\\",
       "excel_name": "学生选课表.xlsx",
       "export_name": "student_lession",
       "export_path": "D:\\workspace\\pyws\\GameCfg\\assets\\ts_class\\"
-    },
-    {
-      "excel_path": "D:\\workspace\\pyws\\GameCfg\\assets\\excel\\",
-      "excel_name": "学生选课表key.xlsx",
-      "export_name": "student_lession_key",
-      "export_path": "D:\\workspace\\pyws\\game_excel\\ts_class\\"
-    },
-    {
-      "excel_path": "D:\\workspace\\pyws\\GameCfg\\assets\\excel\\",
-      "excel_name": "找茬魔方墙配置表.xlsx",
-      "export_name": "more_fan",
-      "export_path": "D:\\workspace\\pyws\\game_excel\\ts_class\\"
     }
   ]
 }
