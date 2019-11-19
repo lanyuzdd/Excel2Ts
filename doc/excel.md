@@ -213,7 +213,7 @@ key表示一对多键列。以学生选课表为例，多对多时给不同的�
 ```
 #### 老师的学生课程列表
 设置老师名字为键列。
-<img src="img/kv.png" />
+<img src="img/select_teacher.png" />
 ```java
 {
     "elective":{
@@ -278,7 +278,7 @@ key表示一对多键列。以学生选课表为例，多对多时给不同的�
 
 ### 使用数据结构修饰符key_value_key和key_value_value
 key_value_key和key_value_value表示纯键值对，一对修饰符一起使用。纯键值对表除了注释列，只有键列（key_value_key）和值列（key_value_value）。纯键值对表一般用来配置全局定义。比如角色最大等级100，年度最受欢迎老师苍老师。
-<img src="img/select_teacher.png" />
+<img src="img/kv.png" />
 ```java
 {
     "common":{
