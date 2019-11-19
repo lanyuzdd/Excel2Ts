@@ -6,3 +6,4 @@
 /static/
 /.mypy_cache
 /assets/ts_class
+/.vscode
