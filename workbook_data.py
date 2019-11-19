@@ -1,6 +1,7 @@
 from typing import List
 import json
 import re
+import xlwings
 
 # 值类型，分基础值类型和值类型修饰符
 
@@ -66,28 +67,20 @@ class SheetColumn:
 
         # 有可能是<class 'float'>，转成字符串
         cell_value_str = str(cell_value)
-        # 值符合定义，将值转成正确的数据类型
-        # 检测数字单元格
-        if self.base_type == ColumnBaseValue.type_number:
-            # print("reg_int")
-            # print(reg_int)
-            # print(cell_value)
-            # print(type(cell_value))
-            if re.match(reg_int, cell_value_str):
-                cell_value = int(cell_value)
-                print(cell_value_str + ' 转int ' + str(cell_value))
-                return cell_value
-            if re.match(reg_float, cell_value_str):
-                if int(cell_value) - cell_value == 0:
-                    cell_value = int(cell_value)
-                    print(cell_value_str + ' 转int ' + str(cell_value))
-                else:
-                    cell_value = float(cell_value)
-                    print(cell_value_str + ' 转float ' + str(cell_value))
 
-                return cell_value
+        if re.match(reg_int, cell_value_str):
+            cell_value = int(cell_value)
+            # print(cell_value_str + ' 转int ' + str(cell_value))
+        if re.match(reg_float, cell_value_str):
+            if int(cell_value) - cell_value == 0:
+                cell_value = int(cell_value)
+                # print(cell_value_str + ' 转int ' + str(cell_value))
             else:
-                raise TypeError("值不是数字 列：" + self.name + " 行数：" + row_idx)
+                cell_value = float(cell_value)
+                # print(cell_value_str + ' 转float ' + str(cell_value))
+
+        if self.base_type == ColumnBaseValue.type_string:
+            cell_value = str(cell_value)
 
         return cell_value
 
@@ -211,9 +204,14 @@ class Sheet:
         class_prop = "\n"
 
         value_col_idx = -1
+        comment_col_idx = -1
         for col in self.value_type_columns:
             if col.sheet_index != self.key_column_idx:
                 value_col_idx = col.sheet_index
+        # 约约定纯键值对表中，comment列是键的注释，可不填
+        for col in self.column_type_list:
+            if col.name == "comment":
+                comment_col_idx = col.sheet_index
 
         if value_col_idx == -1:
             raise TypeError("不是纯键值对表")
@@ -224,8 +222,14 @@ class Sheet:
             cell_value = row_value[value_col.sheet_index]
             cell_key = row_value[key_col.sheet_index]
             base_type = "string"
+            # 加注释
+            if comment_col_idx != -1 and comment_col_idx < len(row_value):
+                cell_comment = row_value[comment_col_idx]
+                if cell_comment is not None and cell_comment != '':
+                    class_prop += "/** " + cell_comment + " **/\n"
             if str_is_int(cell_value) or str_is_float(cell_value):
                 base_type = "number"
+
             if base_type == "number":
                 class_prop += "export const " + cell_key + ":" + base_type + "=" + str(cell_value) + ";\n"
             else:
@@ -532,10 +536,121 @@ class Sheet:
 
 class Workbook:
 
-    def __init__(self):
+    #
+    def __init__(self, name: str, excel_path: str):
         # 工作簿的英文名，会作为导出ts类定义的类名、ts文件名
-        self.name = ""
+        self.name = name
         self.sheets: List[Sheet] = []
+        self.cur_sheet_name = ""
+
+        self.load_excel_file(excel_path)
+        pass
+
+    # 加载解析excel文件
+    def load_excel_file(self, excel_path):
+        wb = xlwings.Book(excel_path)
+        sheets = wb.sheets
+
+        for i in range(0, len(sheets)):
+            sheet = sheets[i]
+            # print(sheet.name) #Sheet1
+            a1_value = sheet.range('A1').value
+            # print(sheet.name, 'a1', a1_value)
+            if a1_value is None:
+                continue
+
+            if not is_var_name_ok(sheet.name):
+                print("工作簿的表（sheet）名非法，请修改！" + sheet.name)
+                raise TypeError("工作簿的表（sheet）名非法，请修改！" + sheet.name)
+            # print('read', sheet.name)
+
+            self.read_sheet(sheet)
+            pass
+        pass
+
+    # 读取某一张表
+    # sheet excel sheet对象
+    def read_sheet(self, sheet):
+        print("读取表:" + sheet.name)
+        self.cur_sheet_name = sheet.name
+
+        # row_num = sheet.api.UsedRange.Rows.count
+        # col_num = sheet.api.UsedRange.Columns.count
+        #
+        # print('row_num', row_num, 'col_num', col_num)
+
+        #
+        rng = sheet.range('A1').expand()
+        # 表行数
+        row_num = rng.last_cell.row
+        # 表列数
+        col_num = rng.last_cell.column
+
+        print('row_num', row_num, 'col_num', col_num)
+
+        # 读取表第一行列名
+        column_names = sheet.range('A1').expand('right').value
+        # 读取表第二行值类型
+        column_types = sheet.range('A2').expand('right').value
+        # 读取表第三行注释
+        column_comments = sheet.range('A3').expand('right').value
+
+        # try:
+        wb_sheet = Sheet(
+            self.cur_sheet_name, column_names, column_types, column_comments)
+        # except TypeError as te:
+        #     print(str(te.args))
+        #     sys.exit(3)
+        self.sheets.append(wb_sheet)
+
+        self.print_sheets_names()
+
+        # 二维数组，excel读取的原始行列数据
+
+        define_col_num = len(wb_sheet.column_type_list)
+
+        for row_idx in range(4, row_num + 1):
+            # 读取一行
+            right_cell = chr(ord('A') + len(wb_sheet.column_type_list))
+            # print("right_cell char " + right_cell)
+            # print(right_cell + str(row_idx))
+
+            # row_data = sheet.range('A' + str(row_idx)).expand('right').value
+            # row_data = sheet.range('A', right_cell + str(row_idx)).value
+            range_str = 'A' + str(row_idx) + ':' + right_cell + str(row_idx)
+            # print("range_str", range_str)
+            row_data = sheet.range(range_str).value
+
+            # print("row_data origin")
+            # print(row_data)
+
+            # 当前行的实际长度
+            cur_row_col_num = len(row_data)
+
+            # 数组,原始格式,包括注释列
+            row_cell_values = []
+
+            for column_idx in range(0, define_col_num):
+                # print('column_idx:', column_idx)
+                if column_idx >= cur_row_col_num:
+                    cell_value = None
+                else:
+                    cell_value = row_data[column_idx]
+
+                column = wb_sheet.column_type_list[column_idx]
+                formatted_value = column.validate_cell_value_by_column_type(
+                    cell_value, row_idx)
+
+                row_cell_values.append(formatted_value)
+                pass
+
+            wb_sheet.origin_value_rows.append(row_cell_values)
+
+            # print(json.dumps(row_data))
+
+            pass
+
+        print('所有行数据读取完毕')
         pass
 
     def print_sheets_names(self):
@@ -615,7 +730,7 @@ def column_types_change_comment_column_type(column_types: List[str], column_name
     comment_idxes = []
 
     for i in range(0, len(column_names)):
-        print(i)
+        # print(i)
         column_name = column_names[i]
         if column_name[0:7] == 'comment':
             comment_idxes.append(i)
