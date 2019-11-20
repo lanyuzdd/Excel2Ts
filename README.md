@@ -247,5 +247,5 @@ export namespace student_lession_ns {
 ```
 代码中使用excel导出的数据和数据结构：
 ```javascript
-console.log(student_lession_ns.student_lession);
+console.log(student_lession_ns.instance.student_lession);
 ```
