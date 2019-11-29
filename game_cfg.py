@@ -51,6 +51,8 @@ def load_file_cfg():
             sys.exit(2)
         # print(table_item['path'])
         pass
+    workbook_data.ExportOptions.remove_key_prop = file_cfg["export_options"]["remove_key_prop"]
+    pass
 
 
 # 加载要导出的excel表文件列表

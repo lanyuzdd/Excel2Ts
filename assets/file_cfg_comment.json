@@ -1,0 +1,23 @@
+{
+  "info": "配置表注释",
+  "export_tables": [
+    "塔防.xlsx","这里填要导出的excel表文件名"
+  ],
+  "export_options": {
+    "remove_key_prop": "true or false，包含键值列（primary_key key）的表且值列超过2列以上，导出时表的对象结构体是否删除键值列属性"
+  },
+  "tables": [
+    {
+      "excel_path": "D:\\workspace\\pyws\\GameCfg\\assets\\excel\\",
+      "excel_name": "学生选课表.xlsx",
+      "export_name": "student_lession",
+      "export_path": "D:\\workspace\\pyws\\GameCfg\\assets\\ts_class\\"
+    },
+    {
+      "excel_path": "excel文件所在文件夹路径",
+      "excel_name": "excel文件名",
+      "export_name": "要导出的ts文件名",
+      "export_path": "要导出的ts文件路径"
+    }
+  ]
+}

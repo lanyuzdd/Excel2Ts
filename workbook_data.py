@@ -6,10 +6,11 @@ import xlwings
 # 值类型，分基础值类型和值类型修饰符
 
 # 基础值类型
-sys_base_value_types = ['string', 'number', 'comment']
+sys_base_value_types = ['string', 'number', 'comment', 'list']
 
 # 值类型修饰符
-sys_value_type_specifiers = ['key', 'primary_key', 'key_value_key', 'key_value_value', 'list']
+sys_value_type_specifiers = ['key', 'primary_key',
+                             'key_value_key', 'key_value_value']
 
 # 键值类型列表
 sys_key_specifiers = ['key', 'primary_key', 'key_value_key']
@@ -21,6 +22,11 @@ reg_int = r'-?[1-9]\d*$'
 reg_float = r'-?([1-9]\d*\.\d*|0\.\d*[1-9]\d*|0?\.0+|0)$'
 
 
+class ExportOptions:
+    # true or false，包含键值列（primary_key key）的表且值列超过2列以上，导出时表的对象结构体是否删除键值列属性
+    remove_key_prop = True
+
+
 class ColumnBaseValue:
     type_string: str = "string"
     type_number: str = "number"
@@ -28,6 +34,7 @@ class ColumnBaseValue:
     type_list: str = "list"
 
 
+# 列修饰类型
 class ColumnSpecifier:
     key: str = "key"
     primary_key: str = "primary_key"
@@ -35,6 +42,15 @@ class ColumnSpecifier:
     key_value_value: str = "key_value_value"
     # 无键值对
     no_key = 'no_key'
+
+# list类型分隔符
+
+
+class ListSperator:
+    # 一级分隔符
+    level1: str = '|'
+    # 二级分隔符
+    level2: str = ':'
 
 
 class SheetColumn:
@@ -51,13 +67,11 @@ class SheetColumn:
     # 列在值列中的索引
     value_index = 0
 
-    # 键值列、注释列在写行数据的时候被忽略
-    # ignored = False
-
-    def is_comment_col(self):
-        return self.base_type == ColumnBaseValue.type_comment
+    # def is_comment_col(self):
+    #     return self.base_type == ColumnBaseValue.type_comment
 
     # 列检验值是否符合定义;值符合定义，将值转成正确的数据类型返回
+    # 如果是list列，讲单元格值按|:分隔符解析成数组
     def validate_cell_value_by_column_type(self, cell_value, row_idx: int):
         # todo 检测空单元格
         if (cell_value == '' or cell_value is None) and self.base_type != ColumnBaseValue.type_comment:
@@ -67,6 +81,9 @@ class SheetColumn:
 
         # 有可能是<class 'float'>，转成字符串
         cell_value_str = str(cell_value)
+
+        if self.base_type == ColumnBaseValue.type_list:
+            return value2list(cell_value_str)
 
         if re.match(reg_int, cell_value_str):
             cell_value = int(cell_value)
@@ -110,7 +127,8 @@ class Sheet:
         self.struct = []
 
         column_types_change_comment_column_type(column_types, column_names)
-        self.__init_column_structure(column_names, column_types, column_comments)
+        self.__init_column_structure(
+            column_names, column_types, column_comments)
 
         pass
 
@@ -122,7 +140,8 @@ class Sheet:
             col_name = column_names[i]
             col_type = column_types[i]
             col_comment = column_comments[i]
-            sheet_col = Sheet.get_column_value_type_data(col_name, col_type, col_comment)
+            sheet_col = Sheet.get_column_value_type_data(
+                col_name, col_type, col_comment)
             sheet_col.sheet_index = i
             sheet_col.value_index = i
             self.column_type_list.append(sheet_col)
@@ -137,7 +156,8 @@ class Sheet:
         ts_define = "export interface " + self.name + "{\n"
         for col in self.value_type_columns:
             ts_define += "/** " + col.comment + " **/\n"
-            ts_define += col.name + ":" + get_ts_type_by_col_base_value_type(col.base_type) + ";\n"
+            ts_define += col.name + ":" + \
+                get_ts_type_by_col_base_value_type(col.base_type) + ";\n"
             pass
         ts_define += "}\n"
 
@@ -163,14 +183,16 @@ class Sheet:
             if col.sheet_index == self.key_column_idx:
                 continue
             ts_define += "/** " + col.comment + " **/\n"
-            ts_define += col.name + ":" + get_ts_type_by_col_base_value_type(col.base_type) + ";\n"
+            ts_define += col.name + ":" + \
+                get_ts_type_by_col_base_value_type(col.base_type) + ";\n"
             pass
         ts_define += "}\n"
 
         if self.key_column_type == ColumnSpecifier.primary_key:
             class_prop = self.name + " :{[key:string]:" + self.name + "};\n"
         else:
-            class_prop = self.name + " :{[key:string]:Array<" + self.name + ">};\n"
+            class_prop = self.name + \
+                " :{[key:string]:Array<" + self.name + ">};\n"
 
         return ts_define, class_prop
 
@@ -193,7 +215,8 @@ class Sheet:
         if self.key_column_type == ColumnSpecifier.primary_key:
             class_prop = self.name + " :{[key:string]:" + ts_type + "};\n"
         else:
-            class_prop = self.name + " :{[key:string]:Array<" + ts_type + ">};\n"
+            class_prop = self.name + \
+                " :{[key:string]:Array<" + ts_type + ">};\n"
 
         return ts_define, class_prop
 
@@ -231,9 +254,11 @@ class Sheet:
                 base_type = "number"
 
             if base_type == "number":
-                class_prop += "export const " + cell_key + ":" + base_type + "=" + str(cell_value) + ";\n"
+                class_prop += "export const " + cell_key + ":" + \
+                    base_type + "=" + str(cell_value) + ";\n"
             else:
-                class_prop += "export const " + cell_key + ":" + base_type + "= '" + str(cell_value) + "';\n"
+                class_prop += "export const " + cell_key + ":" + \
+                    base_type + "= '" + str(cell_value) + "';\n"
             pass
 
         return ts_define, class_prop
@@ -253,7 +278,7 @@ class Sheet:
 
         pass
 
-    # 解析表格列的值类型数据，int|key，int|list
+    # 解析表格列的值类型数据，int|key，list
     def get_column_value_type_data(col_name: str, col_type: str, col_comment: str) -> SheetColumn:
         value_type_str = col_type
 
@@ -272,6 +297,9 @@ class Sheet:
         base_type = prefixes[0]
         if base_type not in sys_base_value_types:
             raise TypeError("基础值类型错误：" + base_type)
+
+        if base_type == ColumnBaseValue.type_list and len(prefixes) >= 2:
+            raise TypeError("基础值类型为list的列不能加任何修饰符：" + col_type)
 
         sheet_col.base_type = base_type
 
@@ -324,7 +352,8 @@ class Sheet:
         if 'list' in type_specifier:
             type_specifier.remove('list')
             if type_specifier[0] in sys_key_specifiers:
-                raise TypeError("同一个数值类型中，list与键修饰冲突：" + json.dumps(type_specifier))
+                raise TypeError("同一个数值类型中，list与键修饰冲突：" +
+                                json.dumps(type_specifier))
         pass
 
     # 整表数值修饰检验
@@ -358,7 +387,8 @@ class Sheet:
                     self.key_column_idx = column.sheet_index
                     key_prefix_num = key_prefix_num + 1
                     if key_prefix_num > 1:
-                        raise TypeError("一个表所有列只能有一个key类型修饰：" + str(key_prefix_num) + " " + json.dumps(all_prefixes))
+                        raise TypeError(
+                            "一个表所有列只能有一个key类型修饰：" + str(key_prefix_num) + " " + json.dumps(all_prefixes))
                     # if column.sheet_index != 0:
                     #     raise TypeError("key类型修饰列必须放在第一列：")
                 all_prefixes.append(prefix_item)
@@ -374,6 +404,7 @@ class Sheet:
                 raise TypeError("不是严格的键值对两列格式：" + prefixes_str)
         else:
             pass
+
         pass
 
     # 表格非注释列
@@ -688,7 +719,8 @@ class Workbook:
         namespace_define += sheet_interface
 
         namespace_define += 'export const json_data:any = ' + json.dumps(map_json, sort_keys=True, indent=4,
-                                                                         separators=(',', ':'),
+                                                                         separators=(
+                                                                             ',', ':'),
                                                                          ensure_ascii=False) + ";\n"
         namespace_define += 'export const instance: ' + self.name + ' = json_data;\n'
 
@@ -748,6 +780,8 @@ def get_ts_type_by_col_base_value_type(col_base_value_type: str):
         ts_type = "string"
     elif col_base_value_type == ColumnBaseValue.type_number:
         ts_type = "number"
+    elif col_base_value_type == ColumnBaseValue.type_list:
+        ts_type = "Array<any>"
     else:
         raise TypeError("非法的基础类型：" + col_base_value_type)
     return ts_type
@@ -761,3 +795,34 @@ def str_is_int(content):
 def str_is_float(content):
     content = str(content)
     return re.match(reg_float, content) is not None
+
+# 将list格式的字符串转成数组
+def value2list(value:str):
+    level1_list = value.split(ListSperator.level1)
+    print(ListSperator.level2 in value)
+    if ListSperator.level2 not in value:
+        list_item_value_str2int(level1_list)
+        return level1_list
+    
+    res = []
+    for item in level1_list:
+        level2_list = item.split(ListSperator.level2)
+        res.append(level2_list)
+        pass
+    list_item_value_str2int(res)
+    return res
+
+# 遍历数组，如果数组元素是字符串，将数字字符串转成数字
+def list_item_value_str2int(values):
+    for i in range(0, len(values)):
+        item = values[i]
+        if isinstance(item, List):
+            list_item_value_str2int(item)
+        elif isinstance(item, str):
+            if str_is_int(item):
+                values[i] = int(item)
+            elif str_is_float(item):
+                values[i] = float(item)
+
+    pass
+

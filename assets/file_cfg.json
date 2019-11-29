@@ -1,12 +1,23 @@
 {
-  "info": "游戏配置excel转ts",
-  "export_tables":["学生选课表.xlsx"],
+  "info": "游戏配置excel转ts，注释见file_cfg_comment.json",
+  "export_tables": [
+    "塔防.xlsx"
+  ],
+  "export_options": {
+    "remove_key_prop": true
+  },
   "tables": [
     {
       "excel_path": "D:\\workspace\\pyws\\GameCfg\\assets\\excel\\",
       "excel_name": "学生选课表.xlsx",
       "export_name": "student_lession",
       "export_path": "D:\\workspace\\pyws\\GameCfg\\assets\\ts_class\\"
+    },
+    {
+      "excel_path": "D:\\resource\\TD\\towerdefend\\gamecfg\\",
+      "excel_name": "塔防.xlsx",
+      "export_name": "tower_defender",
+      "export_path": "D:\\workspace\\laya\\TD\\src\\model\\cfg\\"
     }
   ]
 }
