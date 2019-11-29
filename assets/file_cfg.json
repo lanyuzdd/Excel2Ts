@@ -4,7 +4,7 @@
     "塔防.xlsx"
   ],
   "export_options": {
-    "remove_key_prop": true
+    "remove_key_prop": false
   },
   "tables": [
     {

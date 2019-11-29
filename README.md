@@ -18,15 +18,14 @@ excel文件路径、导出的ts文件路径配置在assets/file_cfg.json（windo
 ### 配置file_cfg.json
 ```java
 {
-  "info": "游戏配置excel转ts",
-  "export_tables":["学生选课表.xlsx","找茬魔方墙配置表.xlsx"],
+  "info": "配置表注释",
+  "export_tables": [
+    "塔防.xlsx","这里填要导出的excel表文件名"
+  ],
+  "export_options": {
+    "remove_key_prop": "true or false，包含键值列（primary_key key）的表且值列超过2列以上，导出时表的对象结构体是否删除键值列属性"
+  },
   "tables": [
-    {
-      "excel_path": "excel文件所在文件夹路径",
-      "excel_name": "excel文件名",
-      "export_name": "excel文件导出的ts文件名",
-      "export_path": "导出的ts文件路径"
-    },
     {
       "excel_path": "D:\\workspace\\pyws\\GameCfg\\assets\\excel\\",
       "excel_name": "学生选课表.xlsx",
@@ -34,10 +33,10 @@ excel文件路径、导出的ts文件路径配置在assets/file_cfg.json（windo
       "export_path": "D:\\workspace\\pyws\\GameCfg\\assets\\ts_class\\"
     },
     {
-      "excel_path": "D:\\workspace\\pyws\\GameCfg\\assets\\excel\\",
-      "excel_name": "学生选课表key.xlsx",
-      "export_name": "student_lession_key",
-      "export_path": "D:\\workspace\\pyws\\GameCfg\\assets\\ts_class\\"
+      "excel_path": "excel文件所在文件夹路径",
+      "excel_name": "excel文件名",
+      "export_name": "要导出的ts文件名",
+      "export_path": "要导出的ts文件路径"
     }
   ]
 }

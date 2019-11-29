@@ -24,7 +24,7 @@ reg_float = r'-?([1-9]\d*\.\d*|0\.\d*[1-9]\d*|0?\.0+|0)$'
 
 class ExportOptions:
     # true or false，包含键值列（primary_key key）的表且值列超过2列以上，导出时表的对象结构体是否删除键值列属性
-    remove_key_prop = True
+    remove_key_prop = False
 
 
 class ColumnBaseValue:
@@ -180,7 +180,7 @@ class Sheet:
         ts_define = "export interface " + self.name + " {\n"
 
         for col in self.value_type_columns:
-            if col.sheet_index == self.key_column_idx:
+            if col.sheet_index == self.key_column_idx and ExportOptions.remove_key_prop:
                 continue
             ts_define += "/** " + col.comment + " **/\n"
             ts_define += col.name + ":" + \
@@ -424,6 +424,7 @@ class Sheet:
                     if column.sheet_index > self.column_type_list[i].sheet_index:
                         column.value_index = column.value_index - 1
 
+    # 表格数据转json，导出选项ExportOptions.remove_key_prop在这里实现
     def to_json(self):
 
         if self.key_column_type == ColumnSpecifier.no_key:
@@ -512,7 +513,7 @@ class Sheet:
             key_value = row_origin_data[self.key_column_idx]
             for i in range(0, len(self.value_type_columns)):
                 value_col = self.value_type_columns[i]
-                if value_col.sheet_index == self.key_column_idx:
+                if value_col.sheet_index == self.key_column_idx and ExportOptions.remove_key_prop:
                     continue
                 cell_value = row_origin_data[value_col.sheet_index]
                 row_data.append(cell_value)
