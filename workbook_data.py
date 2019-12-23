@@ -43,6 +43,7 @@ class ColumnSpecifier:
     # 无键值对
     no_key = 'no_key'
 
+
 # list类型分隔符
 
 
@@ -157,7 +158,7 @@ class Sheet:
         for col in self.value_type_columns:
             ts_define += "/** " + col.comment + " **/\n"
             ts_define += col.name + ":" + \
-                get_ts_type_by_col_base_value_type(col.base_type) + ";\n"
+                         get_ts_type_by_col_base_value_type(col.base_type) + ";\n"
             pass
         ts_define += "}\n"
 
@@ -184,7 +185,7 @@ class Sheet:
                 continue
             ts_define += "/** " + col.comment + " **/\n"
             ts_define += col.name + ":" + \
-                get_ts_type_by_col_base_value_type(col.base_type) + ";\n"
+                         get_ts_type_by_col_base_value_type(col.base_type) + ";\n"
             pass
         ts_define += "}\n"
 
@@ -192,7 +193,7 @@ class Sheet:
             class_prop = self.name + " :{[key:string]:" + self.name + "};\n"
         else:
             class_prop = self.name + \
-                " :{[key:string]:Array<" + self.name + ">};\n"
+                         " :{[key:string]:Array<" + self.name + ">};\n"
 
         return ts_define, class_prop
 
@@ -216,7 +217,7 @@ class Sheet:
             class_prop = self.name + " :{[key:string]:" + ts_type + "};\n"
         else:
             class_prop = self.name + \
-                " :{[key:string]:Array<" + ts_type + ">};\n"
+                         " :{[key:string]:Array<" + ts_type + ">};\n"
 
         return ts_define, class_prop
 
@@ -255,10 +256,10 @@ class Sheet:
 
             if base_type == "number":
                 class_prop += "export const " + cell_key + ":" + \
-                    base_type + "=" + str(cell_value) + ";\n"
+                              base_type + "=" + str(cell_value) + ";\n"
             else:
                 class_prop += "export const " + cell_key + ":" + \
-                    base_type + "= '" + str(cell_value) + "';\n"
+                              base_type + "= '" + str(cell_value) + "';\n"
             pass
 
         return ts_define, class_prop
@@ -719,9 +720,11 @@ class Workbook:
         namespace_define += book_define
         namespace_define += sheet_interface
 
-        namespace_define += 'export const json_data:any = ' + json.dumps(map_json, sort_keys=True, indent=4,
-                                                                         separators=(
-                                                                             ',', ':'),
+        # namespace_define += 'export const json_data:any = ' + json.dumps(map_json, sort_keys=True, indent=4,
+        #                                                                  separators=(
+        #                                                                      ',', ':'),
+        #                                                                  ensure_ascii=False) + ";\n"
+        namespace_define += 'export const json_data:any = ' + json.dumps(map_json, sort_keys=True,
                                                                          ensure_ascii=False) + ";\n"
         namespace_define += 'export const instance: ' + self.name + ' = json_data;\n'
 
@@ -797,14 +800,15 @@ def str_is_float(content):
     content = str(content)
     return re.match(reg_float, content) is not None
 
+
 # 将list格式的字符串转成数组
-def value2list(value:str):
+def value2list(value: str):
     level1_list = value.split(ListSperator.level1)
     print(ListSperator.level2 in value)
     if ListSperator.level2 not in value:
         list_item_value_str2int(level1_list)
         return level1_list
-    
+
     res = []
     for item in level1_list:
         level2_list = item.split(ListSperator.level2)
@@ -812,6 +816,7 @@ def value2list(value:str):
         pass
     list_item_value_str2int(res)
     return res
+
 
 # 遍历数组，如果数组元素是字符串，将数字字符串转成数字
 def list_item_value_str2int(values):
@@ -826,4 +831,3 @@ def list_item_value_str2int(values):
                 values[i] = float(item)
 
     pass
-
