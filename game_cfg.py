@@ -28,6 +28,16 @@ def load_file_cfg():
         file_cfg_path = os.path.join(
             sys.path[0], 'assets', 'file_cfg_mac.json')
 
+    # 兼容导出exe
+    exe_path = os.path.realpath(sys.executable)
+    print(exe_path, exe_path)
+    if 'game_cfg.exe' in exe_path:
+        exe_dir_path = os.path.dirname(exe_path)
+        file_cfg_path = os.path.join(exe_dir_path, 'file_cfg.json')
+        pass
+
+    print('file_cfg_path', file_cfg_path)
+
     with open(file_cfg_path, 'r', encoding='utf-8') as file:
         file_cfg = json.load(file)
 

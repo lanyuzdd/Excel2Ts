@@ -7,3 +7,6 @@
 /.mypy_cache
 /assets/ts_class
 /.vscode
+/build
+*.spec
+/dist
